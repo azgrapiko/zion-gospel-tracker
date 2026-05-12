@@ -1,7 +1,5 @@
 import 'react-native-gesture-handler'; // Mahalaga para sa Drawer Navigation
 import React, { useEffect, useState } from 'react';
-import * as Font from 'expo-font';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 
@@ -22,7 +20,6 @@ export default function App() {
 
   // Local State para sa Initializing
   const [initializing, setInitializing] = useState(true);
-const [fontsLoaded, setFontsLoaded] = useState(false);
 
   // 🛠️ DIAGNOSTIC CHECK
   console.log("🛠️ ZION SYSTEM CHECK:", { 
@@ -33,20 +30,9 @@ const [fontsLoaded, setFontsLoaded] = useState(false);
   });
 
   useEffect(() => {
-
-    const loadFonts = async () => {
-  await Font.loadAsync({
-    ...MaterialCommunityIcons.font,
-  });
-
-  setFontsLoaded(true);
-};
-
-loadFonts();
-
     // ⚡ SAFETY TIMER: Pinapatay ang spinner pagkalipas ng 6 seconds (Plaridel Net Proof)
     const safetyTimer = setTimeout(() => {
-      if (initializing || !fontsLoaded) {
+      if (initializing) {
         console.warn("⚠️ SAFETY TIMER: Auth is hanging, forcing spinner OFF.");
         setInitializing(false);
       }
