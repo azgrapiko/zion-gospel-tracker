@@ -2,19 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, FlatList } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// MATERIAL DARK UI: Pinataas ang contrast ng text colors at panel strokes para sa madaling pagbasa
+// MATERIAL DARK UI
 const COLORS = {
   primary: '#26f7ff',
-  card: '#121214',          // Swapped mula #111 para sa tamang material depth consistency
-  itemBg: '#18181c',        // Itinaas ng kaunti mula #161616 para mabigyan ng lunas ang eye strain
-  text: '#ffffff',          // Pure White mula #eee
-  subtext: '#a0a5b5',       // Iniahon mula #666 patungong readable Slate Gray
-  silver: '#d1d4dc',        // Bagong contrast tier para sa list text blocks
+  card: '#121214',          
+  itemBg: '#18181c',        
+  text: '#ffffff',          
+  subtext: '#a0a5b5',       
+  silver: '#d1d4dc',        
   gold: '#f1c40f',
   rankCyan: '#26f7ff'
 };
 
-// Assets mapping para sa stars - Nananatiling intact
 const RANK_ICONS = {
   1: require('../../../assets/1st_star.png'),
   2: require('../../../assets/2nd_star.png'),
@@ -27,10 +26,8 @@ export default function RankingCard({ rankingData }) {
   
   const renderMember = ({ item, index }) => {
     const rank = index + 1;
-    const hasStar = rank <= 5; // Top 1 to 5 lang ang may star icon
+    const hasStar = rank <= 5; 
 
-    // DATABASE COMPATIBILITY DATA MAPPING
-    // Isinasalin ang real database structure (user_name at group_age) mula sa Supabase table profiles
     const memberName = item.user_name || 'Gospel Worker';
     const groupAge = item.group_age || item.groupAge || ''; 
     const preachPct = item.preach_pct ?? item.preachPct ?? '0';
@@ -39,11 +36,12 @@ export default function RankingCard({ rankingData }) {
     return (
       <View style={[styles.rankRow, rank === 1 && styles.topRankBorder]}>
         <View style={styles.leftInfo}>
-          {/* OPTIMIZED: Pinaliliit ang width clearance ng index number */}
+          {/* Siksik na index area para iwas-tulak sa pangalan */}
           <Text style={styles.rankNumber}>{rank}</Text>
           
           <View style={styles.nameGroup}>
-            <View style={styles.nameHeader}>
+            {/* INAYOS NA WRAPPER: Patayo (Column) na para sa Pangalan at Age Profile kung siksikan */}
+            <View style={styles.nameHeaderContainer}>
               <Text 
                 style={styles.memberName} 
                 numberOfLines={1} 
@@ -52,14 +50,16 @@ export default function RankingCard({ rankingData }) {
                 {memberName}
               </Text>
               {groupAge !== '' && (
-                <Text style={styles.groupAgeText} numberOfLines={1}> • {groupAge}</Text>
+                <Text style={styles.groupAgeText} numberOfLines={1}>
+                  • {groupAge}
+                </Text>
               )}
             </View>
             
             <View style={styles.statsRow}>
               <Text style={styles.statLabel}>Preach:</Text>
               <Text style={styles.statValue}>{preachPct}%</Text>
-              <Text style={[styles.statLabel, {marginLeft: 6}]}>Activity:</Text>
+              <Text style={[styles.statLabel, {marginLeft: 8}]}>Activity:</Text>
               <Text style={styles.statValue}>{activityPct}%</Text>
             </View>
           </View>
@@ -69,8 +69,7 @@ export default function RankingCard({ rankingData }) {
           {hasStar ? (
             <Image source={RANK_ICONS[rank]} style={styles.starIcon} />
           ) : (
-            // Empty view para sa rank 6-10 para pantay ang layout
-            <View style={{width: 20}} />
+            <View style={{width: 18}} />
           )}
         </View>
       </View>
@@ -89,7 +88,7 @@ export default function RankingCard({ rankingData }) {
       </View>
 
       <FlatList
-        data={rankingData?.slice(0, 10)} // Kukuha na ng Top 10
+        data={rankingData?.slice(0, 10)} 
         keyExtractor={(item, index) => item.id?.toString() || index.toString()}
         renderItem={renderMember}
         scrollEnabled={true} 
@@ -110,14 +109,14 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
-    padding: 15,
+    padding: 12, // Pinaliit mula 15 para lumaki ang workspace ng listahan
     borderWidth: 1,
-    borderColor: '#232329', // Mas litaw na framework boarder ring
+    borderColor: '#232329', 
     height: '100%',
     flex: 1,
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   titleRow: {
     flexDirection: 'row',
@@ -139,7 +138,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   updateNote: {
-    color: COLORS.subtext, // Slate gray para hindi maglaho sa dilim
+    color: COLORS.subtext, 
     fontSize: 8,
     fontStyle: 'italic',
     marginTop: 1,
@@ -150,48 +149,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.itemBg,
     paddingVertical: 10, 
-    paddingHorizontal: 10, // Bahagyang pinaluwag para sa inner dynamic text strings
+    paddingHorizontal: 8, // Ginawang 8 mula 10 para lumuwag pa ang pinakagitna
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#25252b', // Binigyan ng banayad na inner border separation
+    borderColor: '#25252b', 
   },
   topRankBorder: {
-    borderColor: COLORS.primary + '55', // Bahagyang pinalakas ang glow factor para sa Rank 1
+    borderColor: COLORS.primary + '55', 
   },
   leftInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Powering the flex expansion to prevent horizontal overflow constraints
+    flex: 1, 
   },
   rankNumber: {
     color: COLORS.rankCyan,
-    fontSize: 14, // Siniksik mula 16 patungong 14 para sa compact scaling
+    fontSize: 14, 
     fontWeight: '900',
-    width: 18, // Pinalit mula 25 para mabigyan ng malaking espasyo ang pangalan
+    width: 16, // Pinaliit mula 18 upang isagad ang lunas sa spacing
     textAlign: 'center'
   },
   nameGroup: {
-    marginLeft: 6, // Pinalit mula 10 upang maiwasang maitulak ang teksto sa gilid
+    marginLeft: 6, 
     flex: 1, 
   },
-  nameHeader: {
-    flexDirection: 'row',
+  nameHeaderContainer: {
+    flexDirection: 'row', 
     alignItems: 'center',
-    flex: 1, // Pinipilit ang wrapper na sumunod sa max row layout
+    // UI FIXED GABAY: Tinanggal ang flexWrap para hindi mag-collapse ang text modules sa mobile web layouts
+    flex: 1,
   },
   memberName: {
     color: '#ffffff', 
     fontSize: 12, 
     fontWeight: 'bold',
-    flexShrink: 1, // Awtomatikong liliit o puputulin kung siksikan na ang view
+    // Binigyan ng malaking flex allocation para lumabas ang unang 4-8 na karakter bago mag-truncate
+    flexGrow: 2,
+    flexShrink: 1, 
   },
   groupAgeText: {
     color: COLORS.silver, 
     fontSize: 9,
     fontWeight: '700',
-    marginLeft: 2,
-    flexShrink: 1,
+    marginLeft: 4,
+    flexShrink: 2, // Mas mabilis itong mapuputol kumpara sa memberName para protektahan ang pangalan
   },
   statsRow: {
     flexDirection: 'row',
@@ -207,17 +209,17 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 8,
     fontWeight: '900',
-    marginLeft: 2,
+    marginLeft: 1,
   },
   rightInfo: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    width: 24, // Optimized structural width pillar link
-    marginLeft: 4,
+    width: 20, // Pinaliit mula 24 para hindi nakaw-espasyo sa pangalan ng worker
+    marginLeft: 2,
   },
   starIcon: {
-    width: 16, // Siniksik sa 18 mula 20 para sa eleganteng micro view layout
-    height: 16,
+    width: 18, 
+    height: 18,
     resizeMode: 'contain',
   },
   emptyContainer: {
