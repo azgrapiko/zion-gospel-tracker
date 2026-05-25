@@ -1,5 +1,5 @@
-import React, { useState } from 'react'; 
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react'; 
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Modal, Animated, Easing, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // FIXED PATHS
@@ -19,6 +19,8 @@ import ZionActivity from '../components/GroupActivity/ZionActivity';
 // VERIFIED PATH: src/styles/theme.js
 import { COLORS } from '../styles/theme';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
 export default function GospelScreen() {
   const [showWeekly, setShowWeekly] = useState(true); // Default open para makita agad ang stats
   const [showCalendar, setShowCalendar] = useState(false);
@@ -31,6 +33,24 @@ export default function GospelScreen() {
   const [isOnlineMissionOpen, setIsOnlineMissionOpen] = useState(false);
   const [isPrayerOpen, setIsPrayerOpen] = useState(false);
 
+  // ANNOUNCEMENT ANIMATION ENGINE
+  const scrollX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+
+  useEffect(() => {
+    // Linear continuous loop animation matrix
+    const startTicker = () => {
+      scrollX.setValue(SCREEN_WIDTH);
+      Animated.timing(scrollX, {
+        toValue: -830, // Sapat na haba para sa buong haba ng string bago mag-reset
+        duration: 20000, // 15 segundo para sa banayad at madaling basahing takbo
+        easing: Easing.linear,
+        useNativeDriver: true, // Optimized para sa UI thread hardware acceleration
+      }).start(() => startTicker());
+    };
+
+    startTicker();
+  }, [scrollX]);
+
   return (
     <View style={styles.mainWrapper}> 
       <ScrollView 
@@ -39,6 +59,20 @@ export default function GospelScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.responsiveWrapper}>
+
+          {/* NEW: ANNOUNCEMENT TICKER BANNER (Nakalagay sa itaas ng Gospel Chart) */}
+          <View style={styles.tickerContainer}>
+            <View style={styles.tickerIconBadge}>
+              <MaterialCommunityIcons name="bullhorn" size={14} color="#0f0f0f" />
+            </View>
+            <View style={styles.tickerTrack}>
+              <Animated.View style={{ transform: [{ translateX: scrollX }] }}>
+                <Text style={styles.tickerText}>
+                  Mahalagang Paalala: Tiyakin na ang lahat ng naitala dito sa Gospel Tracker ay maire-record din sa inyong MyMemo App. ANIMO!
+                </Text>
+              </Animated.View>
+            </View>
+          </View>
           
           {/* ANALYTICS SECTION */}
           <View style={styles.chartSection}>
@@ -218,6 +252,40 @@ const styles = StyleSheet.create({
   outerContainer: { flex: 1, backgroundColor: '#0f0f0f' },
   scrollContent: { paddingBottom: 40, paddingHorizontal: 15, paddingTop: 15, alignItems: 'center' },
   responsiveWrapper: { width: '100%', maxWidth: 550 },
+  
+  // NEW: ANNOUNCEMENT TICKER STYLES
+  tickerContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#1c1c1e',
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#2c2c2e',
+    alignItems: 'center',
+    height: 36
+  },
+  tickerIconBadge: {
+    backgroundColor: '#26f7ff', // Premium Cyan contrast focal points
+    paddingHorizontal: 10,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  tickerTrack: {
+    flex: 1,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    paddingLeft: 5,
+  },
+  tickerText: {
+    color: '#fff203',
+    fontSize: 14,
+    fontWeight: '700',
+    whiteSpace: 'nowrap', // Para sa maayos na web compatibility framework rendering
+  },
+
   chartSection: { 
     backgroundColor: '#1a1a1a', 
     padding: 15, 
