@@ -162,7 +162,7 @@ export default function ProfileScreen() {
                 style={styles.editBadge} 
                 onPress={() => setIsPickerVisible(true)}
               >
-                <MaterialCommunityIcons name="camera-plus" size={18} color="#fff" />
+                <MaterialCommunityIcons name="camera-plus" size={18} color="#050505" />
               </TouchableOpacity>
             </View>
           </View>
@@ -171,18 +171,18 @@ export default function ProfileScreen() {
           <Text style={styles.userHandle}>@{userProfile?.user_name || 'username'}</Text>
         </View>
 
-        {/* RE-SIZED SYSTEM IDENTITY CARD */}
+        {/* PREMIUM HIGH CONTRAST SYSTEM IDENTITY CARD */}
         <View style={styles.glassCard}>
           <Text style={styles.cardLabel}>SYSTEM IDENTITY</Text>
           <View style={styles.infoGrid}>
-            <InfoBox label="ZION CODE" value={userProfile?.zion_code || 'PLA'} icon="identifier" />
-            <InfoBox label="AGE GROUP" value={userProfile?.age_group || 'N/A'} icon="account-group" />
-            <InfoBox label="LMS LEVEL" value={userProfile?.lms_level || 'Level 1'} icon="school" />
-            <InfoBox label="STATUS" value="ACTIVE" icon="shield-check" color="#26f7ff" />
+            <InfoBox label="ZION CODE" value={userProfile?.zion_code || 'PLA'} icon="identifier" color="#26f7ff" />
+            <InfoBox label="AGE GROUP" value={userProfile?.group_age || 'N/A'} icon="account-group" color="#26f7ff" />
+            <InfoBox label="LMS LEVEL" value={userProfile?.lms_level || 'Level 1'} icon="school" color="#26f7ff" />
+            <InfoBox label="STATUS" value="ACTIVE" icon="shield-check" color="#2ecc71" />
           </View>
         </View>
 
-        {/* RE-SIZED NOTIFICATION ENGINE */}
+        {/* NOTIFICATION ENGINE SECTION */}
         <View style={styles.notificationWrapper}>
           <NotificationSetup />
         </View>
@@ -204,9 +204,10 @@ export default function ProfileScreen() {
   );
 }
 
-const InfoBox = ({ label, value, icon, color = "#5dade2" }) => (
+// Sub-component containing re-sized high visibility data parameters
+const InfoBox = ({ label, value, icon, color = "#26f7ff" }) => (
   <View style={styles.infoBox}>
-    <MaterialCommunityIcons name={icon} size={16} color={color} />
+    <MaterialCommunityIcons name={icon} size={24} color={color} />
     <View style={styles.infoTextGroup}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value}</Text>
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
   scrollContent: { 
     paddingBottom: 40,
     alignItems: 'center', 
-    width: '100%',
+    width: '90%',
     alignSelf: 'center' 
   },
   profileHeader: { 
@@ -237,57 +238,60 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: { marginBottom: 10 },
   avatarRing: { 
-    width: 100, height: 100, borderRadius: 50, 
+    width: 104, height: 104, borderRadius: 52, 
     borderWidth: 2, borderColor: '#26f7ff', 
     padding: 3, justifyContent: 'center', alignItems: 'center' 
   },
-  profileImg: { width: 88, height: 88, borderRadius: 44 },
+  profileImg: { width: 92, height: 92, borderRadius: 46 },
   editBadge: { 
     position: 'absolute', bottom: 0, right: 0, 
-    backgroundColor: '#26f7ff', padding: 5, borderRadius: 12,
+    backgroundColor: '#26f7ff', padding: 6, borderRadius: 12,
     elevation: 4
   },
-  userName: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 },
-  userHandle: { color: '#666', fontSize: 12, marginTop: 2 },
+  userName: { color: '#ffffff', fontSize: 20, fontWeight: '900', letterSpacing: 0.5 },
+  userHandle: { color: '#a2a8b6', fontSize: 13, marginTop: 2 },
   
+  // Premium Material Dark High Contrast Base Structure
   glassCard: { 
-    width: '92%', // Binawasan ang lapad para hindi dikit sa gilid ng phone
-    backgroundColor: '#0a0a0a', 
+    width: '92%', 
+    backgroundColor: '#121214', 
     borderRadius: 12, 
-    paddingVertical: 15,
+    paddingVertical: 18,
     paddingHorizontal: 20, 
     borderWidth: 1, 
-    borderColor: '#151515', 
+    borderColor: '#2c303b', 
     marginBottom: 12,
     alignSelf: 'center'
   },
   notificationWrapper: {
-    width: '92%', // Pantay na sa System Identity card
+    width: '92%', 
     marginBottom: 12,
     alignSelf: 'center'
   },
-  cardLabel: { color: '#444', fontSize: 8, fontWeight: '900', marginBottom: 12, letterSpacing: 1.2 },
+  cardLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 16, letterSpacing: 1.5 },
   infoGrid: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    justifyContent: 'space-between' // Ibinabalik sa proper spacing pero kontrolado ng width
+    justifyContent: 'space-between'
   },
+  
+  // Re-sized Info Display Parameters
   infoBox: { 
-    width: '45%', // Mas maliit na width para siksik sa gitna
+    width: '48%', 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 12 
+    marginBottom: 16
   },
-  infoTextGroup: { marginLeft: 8, flex: 1 },
-  infoLabel: { color: '#555', fontSize: 7, fontWeight: 'bold' },
-  infoValue: { color: '#bbb', fontSize: 11, fontWeight: '600', marginTop: 1 },
+  infoTextGroup: { marginLeft: 10, flex: 1 },
+  infoLabel: { color: '#8a8f9e', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  infoValue: { color: '#ffffff', fontSize: 14, fontWeight: '900', marginTop: 2 },
 
   passwordBtn: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    padding: 10, width: '92%', borderRadius: 10, backgroundColor: 'rgba(255, 77, 77, 0.02)',
-    borderWidth: 1, borderColor: 'rgba(255, 77, 77, 0.1)', marginTop: 5,
+    padding: 14, width: '92%', borderRadius: 10, backgroundColor: 'rgba(255, 77, 77, 0.04)',
+    borderWidth: 1, borderColor: 'rgba(255, 77, 77, 0.2)', marginTop: 8,
     alignSelf: 'center'
   },
-  passwordText: { color: '#ff4d4d', marginLeft: 8, fontWeight: '700', fontSize: 11 },
-  footerText: { color: '#1a1a1a', fontSize: 8, marginTop: 20, fontWeight: 'bold' }
+  passwordText: { color: '#ff4d4d', marginLeft: 8, fontWeight: '900', fontSize: 12 },
+  footerText: { color: '#2c303b', fontSize: 9, marginTop: 24, fontWeight: '900', letterSpacing: 0.5 }
 });

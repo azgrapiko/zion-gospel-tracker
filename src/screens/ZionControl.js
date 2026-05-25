@@ -7,16 +7,19 @@ import { supabase } from '../utils/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import useAuthStore from '../store/authStore'; 
 
+// MATERIAL DARK UI: Pinataas ang contrast boundaries para sa siksik na row operations ng admin center
 const COLORS = {
   primary: '#26f7ff',
-  background: '#0f0f0f',
-  card: '#121212',
-  surface: '#1e1e1e',
-  text: '#ffffff',
+  background: '#050505',    // Swapped mula #0f0f0f para sumabay sa deep canvas ng dashboard
+  card: '#121214',          // Bahagyang iniangat ang depth tier
+  surface: '#18181c',       // Elevated panel grid fill para sa structural rows
+  text: '#ffffff',          // Pure White
+  subtext: '#a0a5b5',       // Iniahon mula sa malalabong gray para sa secondary control legends
+  silver: '#d1d4dc',        // High-contrast font para sa value data chips
   danger: '#ff4444',
   success: '#00c853',
-  border: '#222',
-  input: '#1a1a1a',
+  border: '#232329',        // Mas litaw na layout boundary ring kumpara sa #222
+  input: '#16161a',         // Mas malinis na fill for entry fields mula sa #1a1a1a
   overlay: 'rgba(0,0,0,0.85)'
 };
 
@@ -32,7 +35,7 @@ export default function ZionControl() {
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true); 
   
-  // Binago: Gagamit tayo ng userProfile directly para sa initial check
+  // Nananatiling intact ang userProfile data checking system
   const { zionCode, userProfile } = useAuthStore();
   
   const [searchGroup, setSearchGroup] = useState('');
@@ -45,7 +48,6 @@ export default function ZionControl() {
   const fetchMembers = useCallback(async () => {
     console.log("===== ZION CONTROL FETCH DEBUG =====");
     
-    // 1. Siguraduhin na ang profile at ang zionCode ng Admin ay loaded na
     if (!userProfile?.id || !zionCode) {
       console.warn("Fetch waiting: Admin Profile or Zion Code is missing.");
       return;
@@ -54,10 +56,8 @@ export default function ZionControl() {
     try {
       setLoading(true);
       
-      // Simulan ang query sa profiles table
       let query = supabase.from('profiles').select('*');
       
-      // 2. Admin Check: Nakabase sa Role at Username
       const isAdmin = userProfile?.role === 'super_admin' || 
                       userProfile?.user_name === 'admin_plaridel';
       
@@ -66,20 +66,13 @@ export default function ZionControl() {
       if (isAdmin) {
         /**
          * MULTI-TENANCY FILTER (Strict Isolation):
-         * Ang Admin ay makakakita lamang ng:
-         * - Members na kapareho ng kanyang zion_code (e.g., 'PLA' only)
-         * - OR lahat ng accounts na 'super_admin' (para makita ang ibang leaders/admins)
+         * Ang Admin ay makakakita lamang ng mga ka-branch o super_admins.
          */
         query = query.or(`zion_code.eq.${zionCode},role.eq.super_admin`);
       } else {
-        /**
-         * Para sa regular users/members (kung may access sila sa list):
-         * Tanging ang sariling branch lang ang makikita nila.
-         */
         query = query.eq('zion_code', zionCode);
       }
 
-      // 3. I-sort base sa Full Name para maayos ang listahan
       const { data, error } = await query.order('full_name', { ascending: true });
       
       if (error) throw error;
@@ -95,13 +88,11 @@ export default function ZionControl() {
         setLoading(false); 
       }
     }
-    // Dependency array: tatakbo ulit ito kapag nagbago ang zionCode o profile
   }, [zionCode, userProfile]);
 
   useEffect(() => { 
     isMounted.current = true;
     
-    // Trigger fetch kapag may profile na
     if (userProfile?.id) {
       fetchMembers();
     }
@@ -224,7 +215,7 @@ export default function ZionControl() {
               <MaterialCommunityIcons 
                 name={tab.icon} 
                 size={14} 
-                color={item.tab_access?.[tab.id] ? COLORS.primary : '#333'} 
+                color={item.tab_access?.[tab.id] ? COLORS.primary : '#323640'} // Iniahon mula #333 para matukoy agad kung patay ang feature access
               />
             </TouchableOpacity>
           ))}
@@ -243,7 +234,7 @@ export default function ZionControl() {
           <MaterialCommunityIcons 
             name={item.role === 'super_admin' ? "toggle-switch" : "toggle-switch-off-outline"} 
             size={28} 
-            color={item.role === 'super_admin' ? COLORS.primary : '#444'} 
+            color={item.role === 'super_admin' ? COLORS.primary : '#444a57'} // Mas litaw mula sa #444 kapag naka-disable
           />
         </TouchableOpacity>
       </View>
@@ -293,9 +284,9 @@ export default function ZionControl() {
         
         <View style={styles.filterContainer}>
           <View style={styles.filterRow}>
-            <TextInput style={styles.filterInput} placeholder="Group" placeholderTextColor="#444" value={searchGroup} onChangeText={setSearchGroup} />
-            <TextInput style={[styles.filterInput, {flex: 0.4}]} placeholder="Unit" placeholderTextColor="#444" keyboardType="numeric" value={searchUnit} onChangeText={setSearchUnit} />
-            <TextInput style={styles.filterInput} placeholder="LMS" placeholderTextColor="#444" value={searchLevel} onChangeText={setSearchLevel} />
+            <TextInput style={styles.filterInput} placeholder="Group" placeholderTextColor="#5c6270" value={searchGroup} onChangeText={setSearchGroup} />
+            <TextInput style={[styles.filterInput, {flex: 0.4}]} placeholder="Unit" placeholderTextColor="#5c6270" keyboardType="numeric" value={searchUnit} onChangeText={setSearchUnit} />
+            <TextInput style={styles.filterInput} placeholder="LMS" placeholderTextColor="#5c6270" value={searchLevel} onChangeText={setSearchLevel} />
           </View>
           <TouchableOpacity style={styles.bulkBtn} onPress={bulkApprove}>
             <MaterialCommunityIcons name="check-all" size={20} color={COLORS.success} />
@@ -310,7 +301,7 @@ export default function ZionControl() {
           data={filteredMembers} 
           renderItem={renderMember} 
           keyExtractor={item => item.id} 
-          ListEmptyComponent={<Text style={{color: '#444', textAlign: 'center', marginTop: 20}}>No members found for Zion [{zionCode}].</Text>}
+          ListEmptyComponent={<Text style={{color: COLORS.subtext, textAlign: 'center', marginTop: 20, fontWeight: '600'}}>No members found for Zion [{zionCode}].</Text>}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
@@ -327,7 +318,7 @@ const styles = StyleSheet.create({
   header: { 
     marginBottom: 12, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#1a1a1a', 
+    borderBottomColor: '#16161a', 
     paddingBottom: 12 
   },
   titleRow: { 
@@ -339,7 +330,8 @@ const styles = StyleSheet.create({
   title: { 
     color: '#fff', 
     fontSize: 18, 
-    fontWeight: 'bold' 
+    fontWeight: '900',
+    letterSpacing: 0.5
   },
   filterContainer: { 
     flexDirection: 'row', 
@@ -356,30 +348,30 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: COLORS.input, 
     color: '#fff', 
-    fontSize: 10, 
-    paddingVertical: 6, 
-    paddingHorizontal: 8, 
-    borderRadius: 6, 
+    fontSize: 11, 
+    paddingVertical: 8, 
+    paddingHorizontal: 10, 
+    borderRadius: 8, 
     borderWidth: 1, 
-    borderColor: '#222' 
+    borderColor: COLORS.border 
   },
   bulkBtn: { 
-    padding: 6, 
-    backgroundColor: '#111', 
-    borderRadius: 6, 
+    padding: 8, 
+    backgroundColor: '#16161a', 
+    borderRadius: 8, 
     borderWidth: 1, 
-    borderColor: '#222', 
+    borderColor: COLORS.border, 
     justifyContent: 'center' 
   },
   ultraCard: { 
     flexDirection: 'row', 
     backgroundColor: COLORS.card, 
-    borderRadius: 8, 
+    borderRadius: 10, 
     padding: 10, 
     marginBottom: 6, 
     alignItems: 'center', 
     borderWidth: 1, 
-    borderColor: '#1a1a1a' 
+    borderColor: '#232329' 
   },
   nameSection: { 
     flex: 1.2 
@@ -388,13 +380,14 @@ const styles = StyleSheet.create({
     color: '#fff', 
     fontSize: 11, 
     fontWeight: '900' 
-  }, // Bold White Username
+  }, 
   roleText: { 
     color: COLORS.primary, 
     fontSize: 8, 
-    fontWeight: '700', 
-    marginTop: 2 
-  }, // Cyan Role
+    fontWeight: '800', 
+    marginTop: 2,
+    letterSpacing: 0.3
+  }, 
   categorySection: { 
     flex: 2, 
     flexDirection: 'row', 
@@ -404,36 +397,37 @@ const styles = StyleSheet.create({
   catBox: { 
     backgroundColor: COLORS.surface, 
     padding: 5, 
-    borderRadius: 4, 
+    borderRadius: 6, 
     flex: 1, 
     alignItems: 'center', 
     borderWidth: 1, 
-    borderColor: '#222', 
+    borderColor: COLORS.border, 
     minHeight: 35, 
     justifyContent: 'center' 
   },
   catLabel: { 
     fontSize: 7, 
-    fontWeight: 'bold', 
+    fontWeight: '900', 
     color: COLORS.primary 
   },
   catVal: { 
     fontSize: 9, 
-    fontWeight: '600', 
-    color: '#fff' 
+    fontWeight: '700', 
+    color: COLORS.silver 
   },
   accessWrapper: { 
     flex: 1, 
     alignItems: 'center', 
     borderLeftWidth: 1, 
-    borderLeftColor: '#222', 
+    borderLeftColor: COLORS.border, 
     paddingHorizontal: 4 
   },
   accessTitle: { 
-    color: '#fff', 
+    color: COLORS.subtext, 
     fontSize: 7, 
-    fontWeight: 'bold', 
-    marginBottom: 4 
+    fontWeight: '900', 
+    marginBottom: 4,
+    letterSpacing: 0.3
   },
   accessSection: { 
     flexDirection: 'row', 
@@ -447,12 +441,13 @@ const styles = StyleSheet.create({
     flex: 0.8, 
     alignItems: 'center', 
     borderLeftWidth: 1, 
-    borderLeftColor: '#222' 
+    borderLeftColor: COLORS.border 
   },
   switchLabel: { 
-    color: '#444', 
-    fontSize: 6, 
-    fontWeight: 'bold' 
+    color: COLORS.subtext, 
+    fontSize: 7, 
+    fontWeight: '900',
+    marginBottom: 2
   },
   actionSection: { 
     flex: 0.5, 
@@ -470,37 +465,41 @@ const styles = StyleSheet.create({
   },
   modalContent: { 
     backgroundColor: COLORS.card, 
-    borderRadius: 12, 
+    borderRadius: 16, 
     padding: 20, 
     borderWidth: 1, 
-    borderColor: COLORS.primary 
+    borderColor: COLORS.border 
   },
   modalTitle: { 
     color: COLORS.primary, 
     fontSize: 16, 
-    fontWeight: 'bold', 
+    fontWeight: '900', 
     marginBottom: 15, 
-    textAlign: 'center' 
+    textAlign: 'center',
+    letterSpacing: 0.5
   },
   modalOption: { 
-    paddingVertical: 12, 
+    paddingVertical: 14, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#1a1a1a' 
+    borderBottomColor: '#232329' 
   },
   modalOptionText: { 
-    color: '#fff', 
+    color: COLORS.silver, 
     fontSize: 14, 
-    textAlign: 'center' 
+    textAlign: 'center',
+    fontWeight: '600'
   },
   closeBtn: { 
     marginTop: 15, 
-    padding: 10, 
-    backgroundColor: '#1a1a1a', 
-    borderRadius: 8 
+    padding: 12, 
+    backgroundColor: '#16161a', 
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#232329'
   },
   closeBtnText: { 
     color: COLORS.danger, 
     textAlign: 'center', 
-    fontWeight: 'bold' 
+    fontWeight: '900' 
   }
 });

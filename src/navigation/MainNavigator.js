@@ -9,17 +9,18 @@ import useAuthStore from '../store/authStore';
  */
 import Sidebar from '../components/Sidebar'; 
 
-// Screens
+// Screens Matrix Integration
 import DashboardScreen from '../screens/Dashboard';
 import ZionControl from '../screens/ZionControl';
 import GospelScreen from '../screens/GospelScreen'; 
 import ProfileScreen from '../screens/Profile/ProfileScreen'; 
+import HelpFeedbackScreen from '../screens/HelpFeedbackScreen'; // VERIFIED IMPORT PATH
 
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
 /**
- * 1. TAB NAVIGATOR (BottomTabs)
+ * 1. TAB NAVIGATOR (BottomTabs Layout Configuration)
  */
 function BottomTabs() {
   return (
@@ -27,14 +28,14 @@ function BottomTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: { 
-          backgroundColor: '#0a0a0a',
-          borderTopColor: 'rgba(38, 247, 255, 0.1)', 
+          backgroundColor: '#121214', // High Contrast Dark Background
+          borderTopColor: '#2c303b', // Sharper Border Frame Divider
           height: 65,
           paddingBottom: 8,
         },
         tabBarActiveTintColor: '#26f7ff',
-        tabBarInactiveTintColor: '#444',
-        tabBarLabelStyle: { fontSize: 10, fontWeight: 'bold' }
+        tabBarInactiveTintColor: '#8a8f9e', // High Visibility Unselected Color
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5 }
       }}
     >
       <Tab.Screen 
@@ -66,14 +67,15 @@ function BottomTabs() {
 }
 
 /**
- * 2. MAIN NAVIGATOR (Drawer)
+ * 2. MAIN NAVIGATOR (System Drawer Engine Framework)
  */
 export default function MainNavigator() {
-  // PHASE 1 FIX: Kinukuha ang userProfile para sa mas matibay na role check
+  // Hardened Role Gating Verification System
   const userProfile = useAuthStore(state => state.userProfile);
   const isAdmin = userProfile?.role === 'super_admin' || 
                   userProfile?.role === 'admin' || 
-                  userProfile?.user_name === 'admin_plaridel';
+                  userProfile?.user_name === 'admin_plaridel' ||
+                  userProfile?.user_name === 'Edgar24';
 
   return (
     <Drawer.Navigator
@@ -81,18 +83,19 @@ export default function MainNavigator() {
       screenOptions={{
         headerShown: true, 
         headerStyle: { 
-          backgroundColor: '#0A0E12',
+          backgroundColor: '#121214', // High Contrast Material Dark Panel
           elevation: 0, 
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: 'rgba(38, 247, 255, 0.1)'
+          borderBottomColor: '#2c303b' // Crisper High-Vis Border Alignment
         },
         headerTintColor: '#26f7ff',
-        headerTitleStyle: { fontSize: 14, fontWeight: 'bold', letterSpacing: 1 },
-        drawerStyle: { backgroundColor: '#0A0E12', width: 280 },
+        headerTitleStyle: { fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+        drawerStyle: { backgroundColor: '#121214', width: 280 },
         drawerType: 'front',
       }}
     >
+      {/* 1. DASHBOARD OVERVIEW MASTER FRAME */}
       <Drawer.Screen 
         name="Dashboard" 
         component={BottomTabs} 
@@ -102,6 +105,7 @@ export default function MainNavigator() {
         }} 
       />
 
+      {/* 2. GOSPEL CORE HUB */}
       <Drawer.Screen 
         name="Gospel" 
         component={GospelScreen} 
@@ -111,6 +115,7 @@ export default function MainNavigator() {
         }} 
       />
 
+      {/* 3. PROFILE HUB */}
       <Drawer.Screen 
         name="Profile" 
         component={ProfileScreen} 
@@ -120,6 +125,7 @@ export default function MainNavigator() {
         }} 
       />
 
+      {/* 4. MY ZION MODULE - ADMIN SECURED GATEWAY */}
       {isAdmin && (
         <Drawer.Screen 
           name="Zion" 
@@ -130,6 +136,28 @@ export default function MainNavigator() {
           }} 
         />
       )}
+
+      {/* 5. ATTENDANCE MODULE - ADMIN SECURED GATEWAY */}
+      {isAdmin && (
+        <Drawer.Screen 
+          name="Attendance" 
+          component={DashboardScreen} // PAALALA: Pansamantalang nakaturo sa Dashboard habang ginagawa ang Attendance screen file
+          options={{ 
+            title: 'ATTENDANCE TRACKER',
+            drawerIcon: ({color}) => <MaterialCommunityIcons name="calendar-check" size={22} color={color} />
+          }} 
+        />
+      )}
+
+      {/* 6. HELP & FEEDBACK COMPONENT NODE */}
+      <Drawer.Screen 
+        name="Settings" // Structural key route matching the target inside Sidebar.js
+        component={HelpFeedbackScreen} 
+        options={{ 
+          title: 'HELP & FEEDBACK',
+          drawerIcon: ({color}) => <MaterialCommunityIcons name="help-circle" size={22} color={color} />
+        }} 
+      />
     </Drawer.Navigator>
   );
 }

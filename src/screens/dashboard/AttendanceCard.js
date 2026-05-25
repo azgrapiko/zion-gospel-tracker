@@ -2,12 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+// MATERIAL DARK UI: Pinataas ang contrast ng slate at system borders para sa pinakamataas na readability
 const COLORS = {
   primary: '#26f7ff',
-  card: '#111',
-  text: '#ffffff',
-  subtext: '#444',
-  border: '#222'
+  card: '#121214',          // Swapped mula #111 para sumabay sa bagong Dashboard elevation
+  text: '#ffffff',          // Pure White
+  subtext: '#a0a5b5',       // Mula #444, iniangat sa maliwanag na Slate Gray para sa madaling pagbasa
+  border: '#232329'         // Higit na litaw na border framing kumpara sa #222
 };
 
 export default function AttendanceCard() {
@@ -20,7 +21,7 @@ export default function AttendanceCard() {
 
       <View style={styles.content}>
         <View style={styles.placeholderIconBox}>
-          <MaterialCommunityIcons name="hammer-wrench" size={40} color={COLORS.subtext} />
+          <MaterialCommunityIcons name="hammer-wrench" size={40} color={COLORS.primary} />
         </View>
         <Text style={styles.mainText}>Attendance Update Coming Soon</Text>
         <Text style={styles.subText}>
@@ -64,11 +65,11 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#16161a', // Mula #0a0a0a, itinaas ang depth ng container fill
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#1a1a1a',
+    borderColor: '#2d3139',     // Mas malinaw na line alignment ring
     marginBottom: 15,
   },
   mainText: {
@@ -78,12 +79,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subText: {
-    color: COLORS.subtext,
+    color: COLORS.subtext, // Pinalinaw ang paragraph text para madaling basahin ang dev advisory
     fontSize: 11,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 16,
     paddingHorizontal: 20,
+    fontWeight: '500'
   },
   footerLine: {
     height: 2,
@@ -92,6 +94,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 20,
     borderRadius: 1,
-    opacity: 0.3,
+    opacity: 0.5, // Bahagyang tinaasan ang visibility mula sa 0.3 para maging solid accent ribbon
   }
 });

@@ -16,7 +16,7 @@ export default function Sidebar({ navigation, state }) {
   // PHASE 2 FIX: Kinukuha ang current route name mula sa state index
   const currentRoute = state?.routeNames?.[state.index];
 
-  // Hardened Admin Check
+  // Hardened Admin & Super Admin Verification Gate
   const isAdmin = userProfile?.user_name === 'admin_plaridel' || 
                   userProfile?.user_name === 'Edgar24' || 
                   userProfile?.role === 'admin' ||
@@ -48,6 +48,7 @@ export default function Sidebar({ navigation, state }) {
     }
   };
 
+  // Re-sized Menu Item Component Injection
   const MenuItem = ({ icon, title, target, isActive }) => (
     <TouchableOpacity 
       style={[styles.menuItem, isActive && styles.activeItem]} 
@@ -57,8 +58,8 @@ export default function Sidebar({ navigation, state }) {
       <View style={styles.iconWrapper}>
         <MaterialCommunityIcons 
           name={icon} 
-          size={24} 
-          color={isActive ? "#26f7ff" : "#5dade2"} 
+          size={28} // Pinalaki para sa mas mataas na visibility
+          color={isActive ? "#26f7ff" : "#8a8f9e"} // High Contrast Active Shift
         />
       </View>
       {isExpanded && (
@@ -75,7 +76,7 @@ export default function Sidebar({ navigation, state }) {
         onMouseEnter: () => setHover(true),
         onMouseLeave: () => setHover(false)
       } : {})}
-      style={[styles.sidebar, { width: isExpanded ? 240 : 80 }]}
+      style={[styles.sidebar, { width: isExpanded ? 260 : 85 }]} 
     >
       {/* HEADER / TOGGLE */}
       <TouchableOpacity 
@@ -85,13 +86,13 @@ export default function Sidebar({ navigation, state }) {
       >
         <MaterialCommunityIcons 
           name={isExpanded ? "chevron-left-box" : "menu"} 
-          size={28} 
+          size={32} 
           color="#26f7ff" 
         />
       </TouchableOpacity>
 
       <View style={styles.itemsContainer}>
-        {/* DASHBOARD */}
+        {/* [PUBLIC] 1. DASHBOARD */}
         <MenuItem 
           icon="view-dashboard-outline" 
           title="Dashboard" 
@@ -99,7 +100,23 @@ export default function Sidebar({ navigation, state }) {
           isActive={currentRoute === 'Dashboard'}
         />
 
-        {/* MY ZION - Admin Only */}
+        {/* [PUBLIC] 2. GOSPEL ACTIVITY HUB */}
+        <MenuItem 
+          icon="book-open-page-variant-outline" 
+          title="Gospel Activity" 
+          target="Gospel" 
+          isActive={currentRoute === 'Gospel'}
+        />
+        
+        {/* [PUBLIC] 3. PROFILE USER */}
+        <MenuItem 
+          icon="account-circle-outline" 
+          title="Your Profile" 
+          target="Profile" 
+          isActive={currentRoute === 'Profile'}
+        />
+
+        {/* [ADMIN ONLY] 4. MY ZION */}
         {isAdmin && (
           <MenuItem 
             icon="office-building-marker" 
@@ -109,41 +126,29 @@ export default function Sidebar({ navigation, state }) {
           />
         )}
 
-        <MenuItem 
-          icon="calendar-check-outline" 
-          title="Attendance" 
-          target="Attendance" 
-          isActive={currentRoute === 'Attendance'}
-        />
+        {/* [ADMIN ONLY] 5. ATTENDANCE */}
+        {isAdmin && (
+          <MenuItem 
+            icon="calendar-check-outline" 
+            title="Attendance" 
+            target="Attendance" 
+            isActive={currentRoute === 'Attendance'}
+          />
+        )}
         
-        {/* GOSPEL ACTIVITY HUB */}
+        {/* [PUBLIC] 6. HELP & FEEDBACK (Target structural route name is linked to 'Settings') */}
         <MenuItem 
-          icon="book-open-page-variant-outline" 
-          title="Gospel Activity" 
-          target="Gospel" 
-          isActive={currentRoute === 'Gospel'}
-        />
-        
-        {/* PROFILE USER */}
-        <MenuItem 
-          icon="account-circle-outline" 
-          title="Your Profile" 
-          target="Profile" 
-          isActive={currentRoute === 'Profile'}
-        />
-        
-        <MenuItem 
-          icon="cog-sync-outline" 
-          title="Settings" 
+          icon="help-circle-outline" 
+          title="Help & Feedback" 
           target="Settings" 
           isActive={currentRoute === 'Settings'}
         />
       </View>
 
-      {/* LOGOUT SECTION */}
+      {/* 7. LOGOUT SECTION */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogoutPress}>
         <View style={styles.iconWrapper}>
-          <MaterialCommunityIcons name="power" size={24} color="#ff5555" />
+          <MaterialCommunityIcons name="power" size={28} color="#ff4d4d" />
         </View>
         {isExpanded && <Text style={styles.logoutText}>Sign Out</Text>}
       </TouchableOpacity>
@@ -152,60 +157,67 @@ export default function Sidebar({ navigation, state }) {
 }
 
 const styles = StyleSheet.create({
+  // Premium Material Dark Navigation Framework
   sidebar: {
     height: '100%',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#121214', 
     borderRightWidth: 1,
-    borderRightColor: 'rgba(38, 247, 255, 0.2)',
-    paddingVertical: 10,
+    borderRightColor: '#2c303b', 
+    paddingVertical: 12,
   },
   toggle: { 
-    paddingVertical: 20, 
+    paddingVertical: 16, 
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 15
   },
   itemsContainer: { flex: 1 },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 14, 
+    paddingHorizontal: 16,
     marginVertical: 4,
     marginHorizontal: 10,
     borderRadius: 12,
   },
   iconWrapper: {
-    width: 40,
+    width: 44,
     alignItems: 'center',
     justifyContent: 'center'
   },
   activeItem: {
     backgroundColor: 'rgba(38, 247, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(38, 247, 255, 0.15)'
   },
+  
+  // High Visibility Sizing Core Config
   menuText: { 
-    color: '#a0a0a0', 
-    marginLeft: 15, 
-    fontSize: 14,
-    fontWeight: '500'
+    color: '#ffffff', 
+    marginLeft: 12, 
+    fontSize: 16, 
+    fontWeight: '700',
+    letterSpacing: 0.5
   },
   activeText: { 
     color: '#26f7ff', 
-    fontWeight: '800' 
+    fontWeight: '900' 
   },
+  
   logoutBtn: {
     flexDirection: 'row',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderTopWidth: 0.5,
-    borderTopColor: '#222',
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#1e2026',
     alignItems: 'center',
     marginHorizontal: 10,
   },
   logoutText: { 
-    color: '#ff5555', 
-    marginLeft: 15, 
+    color: '#ff4d4d', 
+    marginLeft: 12, 
     fontWeight: '900',
-    fontSize: 13,
+    fontSize: 15, 
     letterSpacing: 1
   }
 });

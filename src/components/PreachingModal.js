@@ -82,6 +82,7 @@ export default function PreachingModal({ visible, onClose }) {
   const persistData = async (key, data) => {
     try {
       await AsyncStorage.setItem(key, JSON.stringify(data));
+      console.log(`💾 Persisted: ${key}`);
     } catch (e) {
       Alert.alert("Storage Error", "Failed to save data locally.");
     }
@@ -105,7 +106,6 @@ export default function PreachingModal({ visible, onClose }) {
     }
     setLoading(true);
     
-    // Logic for calculation
     const totalCount = Object.values(simpleData).reduce((a, b) => a + b, 0);
     const breakdown = Object.entries(simpleData)
       .filter(([_, val]) => val > 0)
@@ -176,7 +176,6 @@ export default function PreachingModal({ visible, onClose }) {
     await persistData(STORAGE_KEYS.CONNECTION, updated);
     
     setLoading(false);
-    // Reset specific fields
     setListener(''); setContact(''); setAge(''); setIsValid(false); setPromiseDate(''); setConnLocation('');
     Alert.alert("Success", "Connection Log Secured!");
   };
@@ -338,17 +337,69 @@ export default function PreachingModal({ visible, onClose }) {
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { 
-    width: '96%', height: '92%', backgroundColor: '#0A0E12', borderRadius: 24, padding: 20, 
-    maxWidth: 600, borderWidth: 1, borderColor: 'rgba(38, 247, 255, 0.1)'
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(5, 5, 5, 0.94)', // Ginawang mas malalim mula 0.92 para lalong lumitaw ang modal card canvas
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 1 },
-  subHeader: { color: '#26f7ff', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-  tabBar: { flexDirection: 'row', backgroundColor: '#161B22', borderRadius: 12, marginBottom: 20, padding: 5 },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  activeTab: { backgroundColor: '#0A0E12', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(38, 247, 255, 0.2)' },
-  tabText: { color: '#8b949e', fontWeight: 'bold', fontSize: 13 },
-  activeTabText: { color: '#26f7ff' }
+  modalContent: { 
+    width: '96%', 
+    height: '92%', 
+    backgroundColor: '#121214', // Iniayon sa solid core card layout mula sa lumang #0A0E12
+    borderRadius: 24, 
+    padding: 20, 
+    maxWidth: 600, 
+    borderWidth: 1, 
+    borderColor: '#232329' // Ginawang solid frame layer ring mula sa translucent accent
+  },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 20, 
+    alignItems: 'center' 
+  },
+  headerTitle: { 
+    color: '#ffffff', 
+    fontSize: 22, 
+    fontWeight: '900', 
+    letterSpacing: 1 
+  },
+  subHeader: { 
+    color: '#26f7ff', 
+    fontSize: 10, 
+    fontWeight: '900', // Pinalakas patungong 900 para mas visible ang version chip sa adults
+    textTransform: 'uppercase',
+    letterSpacing: 0.3
+  },
+  tabBar: { 
+    flexDirection: 'row', 
+    backgroundColor: '#18181c', // Swapped patungong elevated material surface mula #161B22
+    borderRadius: 14, 
+    marginBottom: 20, 
+    padding: 5,
+    borderWidth: 1,
+    borderColor: '#232329'
+  },
+  tab: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    alignItems: 'center' 
+  },
+  activeTab: { 
+    backgroundColor: '#121214', // Kakulay ng core modal card base para sa premium material integration
+    borderRadius: 10, 
+    borderWidth: 1, 
+    borderColor: '#26f7ff' // Malinaw na solid cyan accent divider line ring
+  },
+  tabText: { 
+    color: '#d1d4dc', // Itinaas mula #8b949e patungong rich Silver Gray para sa madaling pagbasa ng adults kung anong tab ang pipiliin
+    fontWeight: '900', 
+    fontSize: 13,
+    letterSpacing: 0.3
+  },
+  activeTabText: { 
+    color: '#26f7ff',
+    fontWeight: '900'
+  }
 });

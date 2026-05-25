@@ -51,7 +51,7 @@ export default function FruitForm({
             value={fruitName} 
             onChangeText={setFruitName} 
             placeholder="Full Name" 
-            placeholderTextColor="#444" 
+            placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -77,7 +77,7 @@ export default function FruitForm({
             value={location} 
             onChangeText={setLocation} 
             placeholder="Area" 
-            placeholderTextColor="#444" 
+            placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -87,7 +87,7 @@ export default function FruitForm({
             value={contact} 
             onChangeText={setContact} 
             placeholder="Phone / Social" 
-            placeholderTextColor="#444" 
+            placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
           />
         </View>
       </View>
@@ -99,7 +99,7 @@ export default function FruitForm({
         placeholder="Member 1 (Lead)" 
         value={m1} 
         onChangeText={setM1} 
-        placeholderTextColor="#444" 
+        placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
       />
       <View style={styles.infoGrid}>
         <TextInput 
@@ -107,14 +107,14 @@ export default function FruitForm({
           placeholder="Member 2" 
           value={m2} 
           onChangeText={setM2} 
-          placeholderTextColor="#444" 
+          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
         />
         <TextInput 
           style={[styles.input, { flex: 1, marginTop: 8 }]} 
           placeholder="Member 3" 
           value={m3} 
           onChangeText={setM3} 
-          placeholderTextColor="#444" 
+          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
         />
       </View>
 
@@ -129,7 +129,8 @@ export default function FruitForm({
       </TouchableOpacity>
 
       {/* Logs Table */}
-      <Text style={[styles.sectionLabel, { marginTop: 40, color: '#555' }]}>MY FRUITS TABLE LOGS</Text>
+      {/* HIGH CONTRAST FIXED: Iniangat ang kulay ng section header mula sa dating madilim na #555 */}
+      <Text style={[styles.sectionLabel, { marginTop: 40, color: '#a2a8b6' }]}>MY FRUITS TABLE LOGS</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={true}>
         <View style={{ paddingBottom: 20 }}>
           <View style={styles.tableHeader}>
@@ -144,9 +145,9 @@ export default function FruitForm({
             logs.map(log => (
               <View key={log.id} style={styles.tableRow}>
                 <Text style={[styles.td, { width: 60 }]}>{log.date ? log.date.slice(5) : '--'}</Text>
-                <Text style={[styles.td, { width: 140, color: '#26f7ff', fontWeight: 'bold' }]}>{log.name}</Text>
-                <Text style={[styles.td, { width: 100 }]}>{log.location}</Text>
-                <Text style={[styles.td, { width: 120, fontSize: 9, color: '#777' }]}>{log.team}</Text>
+                <Text style={[styles.td, { width: 140, color: '#26f7ff', fontWeight: '900' }]}>{log.name}</Text>
+                <Text style={[styles.td, { width: 100, color: '#ffffff' }]}>{log.location}</Text>
+                <Text style={[styles.td, { width: 120, fontSize: 10, color: '#a2a8b6', fontWeight: '500' }]}>{log.team}</Text>
                 <View style={{ width: 80, flexDirection: 'row', justifyContent: 'space-evenly' }}>
                   <TouchableOpacity onPress={() => handleEdit(log)}>
                     <MaterialCommunityIcons name="pencil-outline" size={18} color="#ffaa00" />
@@ -158,7 +159,8 @@ export default function FruitForm({
               </View>
             ))
           ) : (
-            <Text style={{ color: '#444', fontSize: 10, marginTop: 15 }}>No recorded fruits found in this Zion.</Text>
+            // HIGH CONTRAST FIXED
+            <Text style={{ color: '#a2a8b6', fontSize: 11, marginTop: 15, fontWeight: '700' }}>No recorded fruits found in this Zion.</Text>
           )}
         </View>
       </ScrollView>
@@ -169,19 +171,17 @@ export default function FruitForm({
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 8 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sectionLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
-  zionBadge: { backgroundColor: 'rgba(38, 247, 255, 0.1)', color: '#26f7ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: 'bold', borderWidth: 1, borderColor: '#26f7ff' },
-  // FIX: Labels to Cyan for High Visibility (Elderly Friendly)
+  sectionLabel: { color: '#26f7ff', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+  zionBadge: { backgroundColor: 'rgba(38, 247, 255, 0.12)', color: '#26f7ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: '900', borderWidth: 1, borderColor: '#26f7ff' },
   miniLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
-  input: { backgroundColor: '#111', color: '#FFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#333' },
+  input: { backgroundColor: '#121214', color: '#FFFFFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#2c303b' },
   infoGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  // FIX: Standardized Web Input Height and Border
-  webDate: { backgroundColor: '#111', color: '#fff', border: '1px solid #333', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', outline: 'none' },
-  webSelect: { backgroundColor: '#111', color: '#fff', border: '1px solid #333', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', outline: 'none' },
+  webDate: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', outline: 'none' },
+  webSelect: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', outline: 'none' },
   saveBtn: { backgroundColor: '#26f7ff', padding: 18, borderRadius: 12, marginTop: 25, alignItems: 'center', elevation: 4 },
-  saveBtnText: { color: '#000', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
-  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#333', paddingBottom: 12, marginTop: 20 },
-  th: { color: '#555', fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' },
-  tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#111', alignItems: 'center' },
-  td: { color: '#ccc', fontSize: 11 }
+  saveBtnText: { color: '#000000', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
+  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#2d313d', paddingBottom: 12, marginTop: 20 },
+  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // High-contrast headers mula sa dating #555
+  tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
+  td: { color: '#ffffff', fontSize: 11, fontWeight: '500' }
 });

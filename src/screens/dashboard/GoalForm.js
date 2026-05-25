@@ -7,12 +7,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { height } = Dimensions.get('window');
 
+// MATERIAL DARK UI: Pinataas ang contrast levels para sa mas madaling pagbabasa habang nag-e-input ng data
 const COLORS = {
   primary: '#26f7ff',
   background: '#050505',
-  card: '#111',
+  card: '#121214',          // Bahagyang maliwanag na elebasyon ng card fill
   text: '#ffffff',
-  subtext: '#888',
+  subtext: '#a0a5b5',       // Mula #888, iniangat sa Slate Gray para sa pinakamataas na readability
+  silver: '#e1e4ed',        // Idinagdag para sa high-contrast body labels
   accent: '#2ecc71',
   danger: '#ff4d4d'
 };
@@ -56,7 +58,6 @@ export default function GoalForm({ onSave, onClose }) {
   };
 
   const handleSave = () => {
-    // Nagpapadala lang ng relevant data base sa category para i-merge sa Dashboard state
     let dataToMerge = {};
 
     if (category === 'attendance') {
@@ -96,7 +97,7 @@ export default function GoalForm({ onSave, onClose }) {
         </TouchableOpacity>
       </View>
 
-      {/* TAB BAR - I-a-adjust ang state pero hindi buburahin ang iba */}
+      {/* TAB BAR */}
       <View style={styles.tabBar}>
         {['attendance', 'preaching', 'evangelist'].map((cat) => (
           <TouchableOpacity 
@@ -224,7 +225,7 @@ const MiniInput = ({ label, value, onChange }) => (
       onChangeText={onChange} 
       keyboardType="numeric" 
       placeholder="0" 
-      placeholderTextColor="#222"
+      placeholderTextColor="#444a57" // Tinaasan mula #222 para mas madaling mapansin ang kawalan ng input
     />
   </View>
 );
@@ -238,7 +239,7 @@ const InputField = ({ label, value, onChange, keyboard = "numeric" }) => (
       onChangeText={onChange} 
       keyboardType={keyboard}
       placeholder="..." 
-      placeholderTextColor="#333"
+      placeholderTextColor="#444a57" // Pinalinaw mula sa madilim na #333
     />
   </View>
 );
@@ -246,43 +247,43 @@ const InputField = ({ label, value, onChange, keyboard = "numeric" }) => (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25, paddingTop: 40 },
-  headerTitle: { color: COLORS.primary, fontSize: 22, fontWeight: '900' },
-  headerSub: { color: '#444', fontSize: 12, fontWeight: 'bold' },
-  closeBtn: { backgroundColor: '#111', padding: 8, borderRadius: 12, borderWidth: 1, borderColor: '#222' },
+  headerTitle: { color: COLORS.text, fontSize: 22, fontWeight: '900' }, // Pure White
+  headerSub: { color: COLORS.primary, fontSize: 12, fontWeight: 'bold' }, // Ginawang Cyan Link para umangat
+  closeBtn: { backgroundColor: '#16161a', padding: 8, borderRadius: 12, borderWidth: 1, borderColor: '#2d3139' },
   
-  tabBar: { flexDirection: 'row', backgroundColor: '#111', marginHorizontal: 20, borderRadius: 15, padding: 5, marginBottom: 20 },
+  tabBar: { flexDirection: 'row', backgroundColor: '#16161a', marginHorizontal: 20, borderRadius: 15, padding: 5, marginBottom: 20, borderWidth: 1, borderColor: '#232329' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 12 },
   activeTab: { backgroundColor: COLORS.primary },
-  tabText: { color: '#444', fontSize: 10, fontWeight: '900' },
+  tabText: { color: COLORS.subtext, fontSize: 10, fontWeight: '900' }, // Tinaasan ang contrast mula #444 papuntang Slate Gray
   activeTabText: { color: '#000' },
 
   formContent: { flex: 1, paddingHorizontal: 25 },
   section: { marginBottom: 10 },
-  sectionTitle: { color: '#fff', fontSize: 12, fontWeight: '900', marginBottom: 15, letterSpacing: 0.5 },
+  sectionTitle: { color: COLORS.primary, fontSize: 12, fontWeight: '900', marginBottom: 15, letterSpacing: 0.5, textTransform: 'uppercase' }, // Cyan sectional markers
   
   inputGrid: { flexDirection: 'row', justifyContent: 'space-between' },
   miniInputContainer: { width: '31%' },
-  miniLabel: { color: '#555', fontSize: 10, marginBottom: 6, fontWeight: 'bold', textAlign: 'center' },
-  miniInput: { backgroundColor: '#0a0a0a', borderRadius: 12, padding: 15, color: COLORS.primary, fontSize: 18, fontWeight: '900', textAlign: 'center', borderWidth: 1, borderColor: '#222' },
+  miniLabel: { color: COLORS.silver, fontSize: 10, marginBottom: 6, fontWeight: 'bold', textAlign: 'center' }, // Pinalinaw mula #555
+  miniInput: { backgroundColor: '#16161a', borderRadius: 12, padding: 15, color: COLORS.primary, fontSize: 18, fontWeight: '900', textAlign: 'center', borderWidth: 1, borderColor: '#2d3139' }, // Elevated fill and borders
 
   inputGroup: { marginBottom: 15 },
-  labelSmall: { color: '#555', fontSize: 10, fontWeight: 'bold', marginBottom: 8 },
-  fullInput: { backgroundColor: '#0a0a0a', borderRadius: 15, padding: 15, color: '#fff', fontSize: 16, fontWeight: 'bold', borderWidth: 1, borderColor: '#222' },
+  labelSmall: { color: COLORS.silver, fontSize: 10, fontWeight: 'bold', marginBottom: 8 }, // Pinalinaw mula #555
+  fullInput: { backgroundColor: '#16161a', borderRadius: 15, padding: 15, color: '#fff', fontSize: 16, fontWeight: 'bold', borderWidth: 1, borderColor: '#2d3139' },
 
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   addCircle: { backgroundColor: COLORS.primary, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  evangCard: { backgroundColor: '#111', padding: 15, borderRadius: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#222' },
+  evangCard: { backgroundColor: COLORS.card, padding: 15, borderRadius: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#232329' },
   evangName: { color: COLORS.primary, fontSize: 13, fontWeight: '900' },
-  evangInfo: { color: '#888', fontSize: 10, marginTop: 2 },
+  evangInfo: { color: COLORS.silver, fontSize: 10, marginTop: 2, fontWeight: '600' }, // Iniangat mula #888 patungong Silver
 
-  innerForm: { backgroundColor: '#111', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: COLORS.primary + '22', marginTop: 5 },
+  innerForm: { backgroundColor: '#16161a', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(38, 247, 255, 0.3)', marginTop: 5 },
   ageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 15 },
-  ageChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#050505', borderWidth: 1, borderColor: '#222' },
+  ageChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#050505', borderWidth: 1, borderColor: '#2d3139' },
   activeAge: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  ageText: { color: '#555', fontSize: 10, fontWeight: 'bold' },
+  ageText: { color: COLORS.subtext, fontSize: 10, fontWeight: 'bold' }, // Pinalinaw mula #555
   
   dayGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  dayCircle: { width: 35, height: 35, borderRadius: 17.5, backgroundColor: '#050505', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#222' },
+  dayCircle: { width: 35, height: 35, borderRadius: 17.5, backgroundColor: '#050505', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2d3139' },
   activeDay: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   dayText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
 

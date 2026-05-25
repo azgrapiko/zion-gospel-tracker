@@ -23,6 +23,7 @@ export default function ActivityCard({ title, icon, color, onPress }) {
         <MaterialCommunityIcons name={icon} size={28} color={color || '#26f7ff'} />
       </View>
       
+      {/* MATERIAL DARK UI UI-FIX: Pure white at pinalakas ang bold hierarchy para madaling makita ng matatanda */}
       <Text style={styles.cardTitle} numberOfLines={2}>
         {title}
       </Text>
@@ -35,14 +36,14 @@ export default function ActivityCard({ title, icon, color, onPress }) {
 
 const styles = StyleSheet.create({
   card: { 
-    backgroundColor: '#1a1a1a', 
+    backgroundColor: '#121214', // Iniahon mula #1a1a1a para sa tamang material surface contrast elevation
     width: '31.5%', 
     paddingVertical: 20, 
     borderRadius: 12, 
     alignItems: 'center', 
     marginBottom: 15, 
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: '#232329', // Mas matingkad na border perimeter kumpara sa lumang translucent alpha color
     borderTopWidth: 3, 
     // Shadow/Elevation para sa depth
     shadowColor: '#000',
@@ -62,11 +63,11 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   cardTitle: { 
-    color: '#e0e0e0', 
+    color: '#ffffff', // High-contrast solid pure white mula #e0e0e0 upang hindi sumakit ang mata ng adults
     fontSize: 9, 
     textAlign: 'center', 
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontWeight: '900', // Ginawang ultra-bold mula sa 800 para sa lumilitaw na text-shaping
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
     paddingHorizontal: 5
   },
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    opacity: 0.5
+    opacity: 0.6 // Bahagyang itinaas mula 0.5 para sa mas magandang premium accent dot visibility
   },
   bottomAccent: {
     position: 'absolute',

@@ -204,17 +204,20 @@ export default function HubNavigator() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0E12' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#050505' // Pitch black para sa maximum clear-separation base ng core layouts
+  },
   tabBar: { 
     flexDirection: 'row', 
-    backgroundColor: '#111', 
+    backgroundColor: '#18181c', // Inilapat mula #111 para sa premium material contrast reflection
     padding: 6, 
     borderRadius: 14, 
     marginHorizontal: 15, 
     marginTop: 15,
     marginBottom: 20,
     borderWidth: 1, 
-    borderColor: '#222',
+    borderColor: '#232329', // Mas litaw na framing lines kaysa sa dating madilim na #222
     ...Platform.select({
       web: { boxShadow: '0px 0px 15px rgba(38, 247, 255, 0.15)' },
       default: {
@@ -231,6 +234,14 @@ const styles = StyleSheet.create({
     borderWidth: 1, 
     borderColor: '#26f7ff' 
   },
-  tabText: { color: '#555', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-  activeTabText: { color: '#26f7ff' },
+  tabText: { 
+    color: '#b0b5c6', // Ginitna sa solid gray-silver mula #555 para mabilis mabasa ng adults kung alin ang un-selected tabs
+    fontSize: 11,     // Itinaas mula 10 para sa text size visibility enhancement
+    fontWeight: '900', 
+    letterSpacing: 1 
+  },
+  activeTabText: { 
+    color: '#26f7ff',
+    fontWeight: '900'
+  },
 });

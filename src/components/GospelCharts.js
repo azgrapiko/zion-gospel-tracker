@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { supabase } from '../utils/supabase'; //  Ito ang tamang daan!
 
 const CATEGORIES = [
   { label: 'Simple', color: '#26f7ff', key: 'simple', target: 300 },
@@ -28,9 +29,40 @@ export default function GospelCharts({ type }) {
   const [stats, setStats] = useState({});
   const [activityData, setActivityData] = useState({});
 
+  // --- SYNC LOGIC PARA SA RANKING CARD ---
+  // In-update para sa mas matibay na cloud connection
+  const syncToSupabase = async (newStats) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      
+      if (!user) return;
+
+      // Kalkulahin ang percentages base sa targets (Simple, Valid, Fruit para sa Preach)
+      const preachScore = ((newStats.simple / 300) + (newStats.valid / 50) + (newStats.fruit / 50)) / 3 * 100;
+      
+      // Kalkulahin ang Activity percentage mula sa iba pang categories
+      const activityScore = ((newStats.edulms + newStats.online + newStats.prayer + newStats.zion + newStats.sermon) / (50 * 5)) * 100;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          preach_pct: Math.min(Math.round(preachScore), 100),
+          activity_pct: Math.min(Math.round(activityScore), 100),
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) console.error("Supabase Sync Error:", error.message);
+      else console.log("✅ Cloud Sync Success");
+    } catch (err) {
+      console.error("Cloud Sync Error:", err);
+    }
+  };
+
   const fetchZionData = async () => {
     try {
-      // FULL SYNC: Kinukuha ang lahat ng data mula sa bawat form
+      // FULL SYNC: Kinukuha ang lahat ng data mula sa bawat form sa AsyncStorage
       const [s, c, f, e, o, p, z, sm] = await Promise.all([
         AsyncStorage.getItem('@zion_simple_logs'),
         AsyncStorage.getItem('@zion_connection_logs'),
@@ -38,8 +70,8 @@ export default function GospelCharts({ type }) {
         AsyncStorage.getItem('@zion_edulms_logs'),
         AsyncStorage.getItem('@zion_online_logs'),
         AsyncStorage.getItem('@zion_prayer_logs'),
-        AsyncStorage.getItem('@zion_activity_logs'), // Bago
-        AsyncStorage.getItem('@zion_sermon_logs')    // Bago
+        AsyncStorage.getItem('@zion_activity_logs'),
+        AsyncStorage.getItem('@zion_sermon_logs')
       ]);
 
       const sLogs = s ? JSON.parse(s) : [];
@@ -52,7 +84,7 @@ export default function GospelCharts({ type }) {
       const smLogs = sm ? JSON.parse(sm) : [];
 
       // Pag-calculate ng Stats para sa Progress Bars
-      setStats({
+      const calculatedStats = {
         simple: sLogs.reduce((acc, curr) => acc + (curr.total || 0), 0),
         valid: cLogs.filter(l => l.status === 'VALID').length,
         fruit: fLogs.length,
@@ -61,7 +93,12 @@ export default function GospelCharts({ type }) {
         prayer: pLogs.length,
         zion: zLogs.length, 
         sermon: smLogs.length
-      });
+      };
+
+      setStats(calculatedStats);
+
+      // I-trigger ang sync sa Supabase para mag-update ang Ranking Card
+      syncToSupabase(calculatedStats);
 
       // Map para sa Dots sa Calendar
       const dotMap = {};
@@ -69,7 +106,6 @@ export default function GospelCharts({ type }) {
       const processDots = (logs, color) => {
         if (!logs) return;
         logs.forEach(log => {
-          // Flexible date handling para sa webDate (M/D/YYYY)
           const logDate = new Date(log.date);
           if(logDate.getMonth() === currentDate.getMonth() && logDate.getFullYear() === currentDate.getFullYear()) {
             const day = logDate.getDate();
@@ -79,7 +115,6 @@ export default function GospelCharts({ type }) {
         });
       };
 
-      // I-assign ang bawat kulay sa tamang logs sa calendar
       processDots(sLogs, DOT_COLORS.preaching);
       processDots(cLogs, DOT_COLORS.preaching);
       processDots(fLogs, DOT_COLORS.preaching);
@@ -95,7 +130,7 @@ export default function GospelCharts({ type }) {
 
   useEffect(() => {
     fetchZionData();
-    // 5 seconds interval para laging updated ang dashboard kahit kaka-submit lang ng form
+    // 5 seconds interval para laging updated ang dashboard
     const interval = setInterval(fetchZionData, 5000);
     return () => clearInterval(interval);
   }, [currentDate]);
@@ -137,14 +172,14 @@ export default function GospelCharts({ type }) {
     return (
       <View style={styles.contentBody}>
         <View style={styles.calendarNavContainer}>
-          <TouchableOpacity onPress={() => changeMonth(-1)}>
-            <MaterialCommunityIcons name="chevron-left" color="#fff" size={20} />
+          <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.navBtn}>
+            <MaterialCommunityIcons name="chevron-left" color="#ffffff" size={24} />
           </TouchableOpacity>
           <Text style={styles.monthText}>
             {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </Text>
-          <TouchableOpacity onPress={() => changeMonth(1)}>
-            <MaterialCommunityIcons name="chevron-right" color="#fff" size={20} />
+          <TouchableOpacity onPress={() => changeMonth(1)} style={styles.navBtn}>
+            <MaterialCommunityIcons name="chevron-right" color="#ffffff" size={24} />
           </TouchableOpacity>
         </View>
         <View style={styles.calendarGrid}>
@@ -168,17 +203,81 @@ export default function GospelCharts({ type }) {
 
 const styles = StyleSheet.create({
   contentBody: { paddingVertical: 10 },
-  monitorRow: { marginBottom: 12 },
-  rowInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
-  catLabel: { color: '#888', fontSize: 10, fontWeight: '600' },
-  catVal: { color: '#fff', fontSize: 10, fontWeight: '900' },
-  progressTrack: { height: 3, backgroundColor: '#1A1D23', borderRadius: 2 },
-  progressBar: { height: '100%', borderRadius: 2 },
-  calendarNavContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  monthText: { color: '#fff', fontSize: 11, fontWeight: 'bold', marginHorizontal: 15, textAlign: 'center' },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dayCell: { width: '14.28%', height: 50, borderBottomWidth: 0.2, borderColor: '#222', padding: 2, alignItems: 'center' },
-  dayNumber: { color: '#444', fontSize: 9, fontWeight: 'bold', marginBottom: 3 },
-  dotWrap: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 1.5 },
-  dot: { width: 5, height: 5, borderRadius: 2.5 }
+  monitorRow: { marginBottom: 14 }, // Ginawang 14 mula 12 para sa mas maluwag na finger tapping target area
+  rowInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  catLabel: { 
+    color: '#ffffff', // Solid high contrast white
+    fontSize: 12,     // Bahagyang pinalaki mula 11 para sa solid clarity
+    fontWeight: '900' // Ginawang maximum boldness para sa accessibility ng adults
+  },
+  catVal: { 
+    color: '#ffffff', 
+    fontSize: 14, 
+    fontWeight: '900' 
+  },
+  progressTrack: { 
+    height: 6, // Itinaas mula 4 para mas madaling masubaybayan ng mga matatanda ang haba ng bar
+    backgroundColor: '#1c1c21', // Binigyan ng mas litaw na base track fill mula sa dating #1A1D23
+    borderRadius: 3 
+  },
+  progressBar: { 
+    height: '100%', 
+    borderRadius: 3 
+  },
+  calendarNavContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', // Pinalawak para sa ergonomic layout ng left/right arrow buttons
+    alignItems: 'center', 
+    marginBottom: 15,
+    paddingHorizontal: 10
+  },
+  navBtn: {
+    padding: 6,
+    backgroundColor: '#18181c', // Inilagay sa solid high contrast surface button background
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#232329'
+  },
+  monthText: { 
+    color: '#ffffff', 
+    fontSize: 14, // Pinalaki mula 12 para litaw agad ang kasalukuyang buwan
+    fontWeight: '900', 
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
+  calendarGrid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    borderWidth: 1, 
+    borderColor: '#2d313d' // Nilinawan ang master border ring ng grid mula sa madilim na #333
+  },
+  dayCell: { 
+    width: '14.28%', 
+    height: 58, // Bahagyang pinalaki mula 55 para sa better block proportion
+    borderWidth: 0.5, 
+    borderColor: '#232329', // Mas kitang-kitang grid separations kumpara sa #222
+    padding: 3, 
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    backgroundColor: '#121214' // Binigyan ng selyadong panel layer para lumitaw ang mga numerasyon
+  },
+  dayNumber: { 
+    color: '#ffffff', // Pure white
+    fontSize: 12,     // Itinaas mula 11 para sa tamang readability block
+    fontWeight: '900', 
+    marginBottom: 4 
+  },
+  dotWrap: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'center', 
+    gap: 2,
+    maxWidth: '100%'
+  },
+  dot: { 
+    width: 6, // Pinalaki mula 5 para mas madaling mapansin ng adults ang dots ng logs
+    height: 6, 
+    borderRadius: 3 
+  }
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -16,10 +16,17 @@ export default function ZionActivity() {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [logs, setLogs] = useState([]);
 
-  // Web-Compatible Date
-  const today = new Date();
-  const webDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
-  const [date] = useState(webDate);
+  // Web-Compatible Date Initialization Formatter (YYYY-MM-DD for stable selection sync)
+  const getTodayString = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // User explicitly selects and updates the activity log date field
+  const [date, setDate] = useState(getTodayString());
 
   useEffect(() => {
     loadLogs();
@@ -52,7 +59,7 @@ export default function ZionActivity() {
     const newLog = {
       id: Date.now().toString(),
       type: 'ZionActivity',
-      date: date,
+      date: date, // Active chosen user date
       activities: taskLabels.join(', '),
       timestamp: new Date().toISOString()
     };
@@ -83,9 +90,26 @@ export default function ZionActivity() {
       <Text style={styles.headerTitle}>ZION ACTIVITY</Text>
 
       <Text style={styles.label}>DATE FIELD</Text>
-      <View style={styles.inputBox}>
-        <Text style={styles.inputText}>{date}</Text>
-        <MaterialCommunityIcons name="calendar-star" size={20} color="#3498db" />
+      <View style={styles.inputBoxWrapper}>
+        {Platform.OS === 'web' ? (
+          <input 
+            type="date" 
+            value={date} 
+            onChange={(e) => setDate(e.target.value)} 
+            style={styles.webDate} 
+          />
+        ) : (
+          <View style={styles.nativeDateContainer}>
+            <TextInput 
+              style={styles.inputText}
+              value={date}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#8a8f9e"
+              onChangeText={setDate}
+            />
+            <MaterialCommunityIcons name="calendar-star" size={25} color="#2281c0" />
+          </View>
+        )}
       </View>
 
       <Text style={styles.label}>SELECT ZION ACTIVITY</Text>
@@ -99,7 +123,7 @@ export default function ZionActivity() {
           <MaterialCommunityIcons 
             name={selectedTasks.includes(task.id) ? "checkbox-marked" : "checkbox-blank-outline"} 
             size={22} 
-            color={selectedTasks.includes(task.id) ? "#3498db" : "#666"} 
+            color={selectedTasks.includes(task.id) ? "#3498db" : "#8a8f9e"} 
           />
           <Text style={[styles.checkText, selectedTasks.includes(task.id) && styles.checkTextActive]}>
             {task.label}
@@ -117,7 +141,7 @@ export default function ZionActivity() {
         <View style={styles.tableHeader}>
           <Text style={[styles.hCell, { flex: 0.8 }]}>Date</Text>
           <Text style={[styles.hCell, { flex: 2 }]}>Activities</Text>
-          <Text style={[styles.hCell, { width: 30 }]}>Act</Text>
+          <Text style={[styles.hCell, { width: 30, textAlign: 'right' }]}>ACT</Text>
         </View>
 
         <View style={styles.listWrapper}>
@@ -125,10 +149,12 @@ export default function ZionActivity() {
             {logs.map((item) => (
               <View key={item.id} style={styles.tableRow}>
                 <Text style={styles.rCell}>{item.date}</Text>
-                <Text style={styles.rCell} numberOfLines={2}>{item.activities}</Text>
-                <TouchableOpacity onPress={() => deleteLog(item.id)}>
-                  <MaterialCommunityIcons name="pencil" size={16} color="#3498db" />
-                </TouchableOpacity>
+                <Text style={[styles.rCell, { flex: 2, color: '#ffffff', fontWeight: '500' }]} numberOfLines={2}>{item.activities}</Text>
+                <View style={{ width: 30, alignItems: 'flex-end' }}>
+                  <TouchableOpacity onPress={() => deleteLog(item.id)}>
+                    <MaterialCommunityIcons name="delete-outline" size={18} color="#ff4d4d" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -139,35 +165,45 @@ export default function ZionActivity() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#0f0f0f' },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
-  label: { color: '#3498db', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
-  inputBox: { 
+  container: { padding: 20, backgroundColor: '#050505' },
+  headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
+  label: { color: '#3498db', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  
+  // High Contrast Calendar Pickers Structure
+  inputBoxWrapper: { marginBottom: 15 },
+  nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#1a1a1a', padding: 12, borderRadius: 8, marginBottom: 20,
-    borderWidth: 1, borderColor: '#222'
+    backgroundColor: '#3a84c8', padding: 10, borderRadius: 8,
+    borderWidth: 1, borderColor: '#2e8ada'
   },
-  inputText: { color: '#fff', fontSize: 14 },
+  inputText: { color: '#ffffff', fontSize: 14, flex: 1 },
+  webDate: { 
+    backgroundColor: '#121214', color: '#ffffff', border: '1px solid #5da6e9', 
+    padding: '12px', borderRadius: '8px', width: '50%', fontSize: '14px', 
+    fontFamily: 'inherit', outline: 'none' 
+  },
+
   checkRow: { 
     flexDirection: 'row', alignItems: 'center', marginBottom: 8, 
-    backgroundColor: '#151515', padding: 12, borderRadius: 8,
-    borderWidth: 1, borderColor: '#222'
+    backgroundColor: '#121414', padding: 14, borderRadius: 8,
+    borderWidth: 1, borderColor: '#2c303b'
   },
-  checkRowActive: { borderColor: 'rgba(52, 152, 219, 0.3)', backgroundColor: '#1a1a1a' },
-  checkText: { color: '#888', marginLeft: 10, fontSize: 12 },
-  checkTextActive: { color: '#fff', fontWeight: '600' },
+  checkRowActive: { borderColor: '#3498db', backgroundColor: '#18181c' },
+  checkText: { color: '#8a8f9e', marginLeft: 10, fontSize: 13, fontWeight: '500' },
+  checkTextActive: { color: '#ffffff', fontWeight: '900' },
+  
   submitBtn: { 
     backgroundColor: '#3498db', padding: 16, borderRadius: 10, alignItems: 'center',
-    marginTop: 20, marginBottom: 30
+    marginTop: 20, marginBottom: 30, shadowColor: '#3498db', shadowOpacity: 0.2, shadowRadius: 10
   },
-  submitText: { color: '#fff', fontWeight: '900', letterSpacing: 1 },
+  submitText: { color: '#ffffff', fontWeight: '900', letterSpacing: 1 },
   
-  // Table Styles
+  // High Contrast Table Layout Config
   logsSection: { marginTop: 10, paddingBottom: 50 },
-  logHeaderLabel: { color: '#fff', fontSize: 11, fontWeight: 'bold', marginBottom: 10, opacity: 0.8 },
-  tableHeader: { flexDirection: 'row', backgroundColor: '#1a1a1a', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#333' },
-  hCell: { color: '#666', fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' },
+  logHeaderLabel: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 12, letterSpacing: 0.5 },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#18181c', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' },
+  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // High contrast header shift
   listWrapper: { maxHeight: 200 },
-  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#222', alignItems: 'center' },
-  rCell: { color: '#ccc', fontSize: 10, flex: 1 }
+  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
+  rCell: { color: '#ffffff', fontSize: 10, flex: 0.8, fontWeight: '500' }
 });

@@ -79,7 +79,7 @@ export default function SimpleForm({
                 style={styles.smallInput}
                 value={preachingDate}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#444"
+                placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
                 onChangeText={setPreachingDate}
               />
             )}
@@ -91,7 +91,7 @@ export default function SimpleForm({
               onChangeText={setLocation} 
               style={styles.smallInput} 
               placeholder="Enter Area" 
-              placeholderTextColor="#444" 
+              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
             />
          </View>
       </View>
@@ -104,7 +104,7 @@ export default function SimpleForm({
               onChangeText={setReportedBy} 
               style={[styles.smallInput, {marginBottom: 12}]} 
               placeholder="Your Full Name (Encoded By)" 
-              placeholderTextColor="#444" 
+              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
          />
 
          <Text style={styles.miniLabel}>TEAM PARTNERS</Text>
@@ -114,14 +114,14 @@ export default function SimpleForm({
               onChangeText={setPartner1} 
               style={[styles.smallInput, {flex: 1, marginRight: 8}]} 
               placeholder="Partner 1" 
-              placeholderTextColor="#444" 
+              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
             />
             <TextInput 
               value={partner2} 
               onChangeText={setPartner2} 
               style={[styles.smallInput, {flex: 1}]} 
               placeholder="Partner 2" 
-              placeholderTextColor="#444" 
+              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
             />
          </View>
       </View>
@@ -159,7 +159,8 @@ export default function SimpleForm({
       </View>
 
       {/* LOGS TABLE SECTION */}
-      <Text style={[styles.sectionLabel, {marginTop: 35, color: '#444'}]}>DAILY TOTAL LOGS</Text>
+      {/* HIGH CONTRAST FIXED: Itinaas ang kulay ng section header upang hindi lumubog sa dilim */}
+      <Text style={[styles.sectionLabel, {marginTop: 35, color: '#a2a8b6'}]}>DAILY TOTAL LOGS</Text>
       <View style={styles.tableHeader}>
          <Text style={[styles.th, {flex: 0.5}]}>DATE</Text>
          <Text style={[styles.th, {flex: 0.8}]}>TEAM</Text>
@@ -172,10 +173,10 @@ export default function SimpleForm({
       {submittedLogs.map((log) => (
         <View key={log.id} style={styles.tableRow}>
            <Text style={[styles.td, {flex: 0.5}]}>{log.date ? log.date.slice(5) : '---'}</Text>
-           <Text style={[styles.td, {flex: 0.8, color: '#777', fontSize: 10}]}>{log.team}</Text>
-           <Text style={[styles.td, {flex: 0.8, color: '#26f7ff', fontWeight: '600'}]}>{log.area}</Text>
-           <Text style={[styles.td, {flex: 1.0, fontSize: 9, color: '#ccc'}]}>{log.breakdown}</Text>
-           <Text style={[styles.td, {textAlign: 'right', flex: 0.3, color: '#26f7ff', fontWeight: 'bold'}]}>{log.total}</Text>
+           <Text style={[styles.td, {flex: 0.8, color: '#a2a8b6', fontSize: 10}]}>{log.team}</Text>
+           <Text style={[styles.td, {flex: 0.8, color: '#26f7ff', fontWeight: '900'}]}>{log.area}</Text>
+           <Text style={[styles.td, {flex: 1.0, fontSize: 9, color: '#ffffff', fontWeight: '500'}]}>{log.breakdown}</Text>
+           <Text style={[styles.td, {textAlign: 'right', flex: 0.3, color: '#26f7ff', fontWeight: '900'}]}>{log.total}</Text>
            <View style={{flex: 0.4, flexDirection: 'row', justifyContent: 'flex-end'}}>
               <TouchableOpacity onPress={() => handleEdit(log)} style={{marginRight: 10}}>
                 <MaterialCommunityIcons name="pencil-outline" size={18} color="#ffaa00" />
@@ -193,29 +194,29 @@ export default function SimpleForm({
 const styles = StyleSheet.create({
   container: { paddingBottom: 20 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  sectionLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
-  zionBadge: { backgroundColor: 'rgba(38, 247, 255, 0.1)', color: '#26f7ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: 'bold', borderWidth: 1, borderColor: '#26f7ff' },
+  sectionLabel: { color: '#26f7ff', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+  zionBadge: { backgroundColor: 'rgba(38, 247, 255, 0.12)', color: '#26f7ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: '900', borderWidth: 1, borderColor: '#26f7ff' },
   infoGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   inputWrapper: { width: '48%' },
   miniLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
-  smallInput: { backgroundColor: '#111', color: '#FFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#333' },
-  webDate: { backgroundColor: '#111', color: '#fff', border: '1px solid #333', padding: '10px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit' },
+  smallInput: { backgroundColor: '#121214', color: '#FFFFFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#2c303b' },
+  webDate: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '10px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit' },
   TeamSection: { marginBottom: 20 },
-  counterContainer: { backgroundColor: '#0f0f0f', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#222' },
-  categoryLabel: { color: '#26f7ff', fontSize: 10, fontWeight: '900', marginBottom: 15, textAlign: 'center', letterSpacing: 2 },
+  counterContainer: { backgroundColor: '#121214', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#232329' },
+  categoryLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 15, textAlign: 'center', letterSpacing: 2 },
   counterRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   counterBox: { flex: 1, alignItems: 'center' },
-  counterLabel: { color: '#ccc', fontSize: 10, fontWeight: 'bold', marginBottom: 8 },
-  controlGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#161616', borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#333' },
-  miniBtn: { width: 32, height: 32, backgroundColor: '#222', borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#444' },
-  btnTxt: { color: '#26f7ff', fontSize: 20, fontWeight: 'bold' },
-  countNum: { color: '#fff', fontSize: 18, fontWeight: '900', marginHorizontal: 15 },
+  counterLabel: { color: '#ffffff', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 0.3 }, // Pure white para mas makita ng nakakatanda
+  controlGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#18181c', borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#3a3e4b' },
+  miniBtn: { width: 34, height: 34, backgroundColor: '#232329', borderRadius: 17, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#4a4f5d' },
+  btnTxt: { color: '#26f7ff', fontSize: 22, fontWeight: '900' },
+  countNum: { color: '#ffffff', fontSize: 18, fontWeight: '900', marginHorizontal: 15 },
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 25 },
-  btnTemp: { flex: 0.3, backgroundColor: '#1a1a1a', padding: 16, borderRadius: 12, marginRight: 10, alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  btnTemp: { flex: 0.3, backgroundColor: '#18181c', padding: 16, borderRadius: 12, marginRight: 10, alignItems: 'center', borderWidth: 1, borderColor: '#2c303b' },
   btnSubmit: { flex: 1, backgroundColor: '#26f7ff', padding: 16, borderRadius: 12, alignItems: 'center' },
-  btnLabel: { color: '#FFF', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
-  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#222', paddingBottom: 10, marginTop: 20 },
-  th: { color: '#555', fontSize: 9, fontWeight: 'bold' },
-  tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#0a0a0a', alignItems: 'center' },
-  td: { color: '#ddd', fontSize: 10 }
+  btnLabel: { color: '#FFFFFF', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
+  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#232329', paddingBottom: 10, marginTop: 20 },
+  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900' }, // High-contrast headers mula sa dating #555
+  tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
+  td: { color: '#ffffff', fontSize: 10 }
 });

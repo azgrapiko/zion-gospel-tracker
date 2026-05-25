@@ -15,12 +15,12 @@ Notifications.setNotificationHandler({
 });
 
 const ACTIVITIES = [
-  { id: 'preaching', label: 'Preaching', icon: 'bullhorn-variant', color: '#e74c3c' },
-  { id: 'sermon', label: 'Sermon', icon: 'book-open-page-variant', color: '#f1c40f' },
-  { id: 'zion', label: 'Zion Activity', icon: 'office-building', color: '#4dabf7' },
-  { id: 'edulms', label: 'EduLMS', icon: 'school', color: '#9b59b6' },
-  { id: 'online', label: 'Online Mission', icon: 'earth', color: '#2ecc71' },
-  { id: 'prayer', label: 'Prayer', icon: 'hands-pray', color: '#ecf0f1' },
+  { id: 'preaching', label: 'Preaching', icon: 'bullhorn-variant', color: '#ff6b6b' },
+  { id: 'sermon', label: 'Sermon', icon: 'book-open-page-variant', color: '#ffd43b' },
+  { id: 'zion', label: 'Zion Activity', icon: 'office-building', color: '#339af0' },
+  { id: 'edulms', label: 'EduLMS', icon: 'school', color: '#da77f2' },
+  { id: 'online', label: 'Online Mission', icon: 'earth', color: '#51cf66' },
+  { id: 'prayer', label: 'Prayer', icon: 'hands-pray', color: '#ffffff' },
 ];
 
 export default function NotificationSetup() {
@@ -69,25 +69,28 @@ export default function NotificationSetup() {
 
   const showSyncReminder = () => {
     if (Platform.OS === 'web') {
-      console.log("Reminder: Pindutin ang SYNC button para ma-activate.");
+      console.log("System Notice: Pindutin ang SYNC & SCHEDULE button sa ibaba upang mag-activate ang bagong oras.");
     } else {
       Alert.alert(
         "System Paalala 📢", 
-        "Huwag kalimutang pindutin ang 'SYNC & SCHEDULE' button sa ibaba upang mag-activate ang bagong oras sa iyong phone."
+        "Huwag kalimutang pindutin ang 'SYNC & SCHEDULE NOTIFICATIONS' button sa ibaba upang mag-activate ang bagong setup sa iyong system."
       );
     }
   };
 
   // --- SCHEDULING ENGINE ---
   const scheduleAllNotifications = async () => {
+    // Pag-check kung nasa real device o browser interface simulation
     if (!Device.isDevice && Platform.OS !== 'web') {
-      Alert.alert('Zion System', 'Physical device ang kailangan para sa actual notifications.');
+      Alert.alert('Zion System', 'Physical device ang kailangan para sa actual push internal background tasks.');
       return;
     }
 
     try {
       // 1. I-clear ang lahat ng lumang schedules
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      if (Platform.OS !== 'web') {
+        await Notifications.cancelAllScheduledNotificationsAsync();
+      }
 
       // 2. I-schedule ang bawat "ON" na activity
       const keys = Object.keys(settings);
@@ -98,29 +101,40 @@ export default function NotificationSetup() {
           const activity = ACTIVITIES.find(a => a.id === id);
           const [hour, minute] = (times[id] || "20:00").split(':').map(Number);
 
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `Zion Reminder: ${activity.label} 📢`,
-              body: `Kapatid, huwag kalimutang i-update ang iyong ${activity.label} activity para sa araw na ito!`,
-              data: { screen: 'Gospel' },
-              sound: true,
-            },
-            trigger: {
-              hour: hour,
-              minute: minute,
-              repeats: true,
-            },
-          });
+          if (Platform.OS !== 'web') {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: `Zion Reminder: ${activity.label} 📢`,
+                body: `Kapatid, huwag kalimutang i-update ang iyong ${activity.label} activity para sa araw na ito!`,
+                data: { screen: 'Gospel' },
+                sound: true,
+              },
+              trigger: {
+                hour: hour,
+                minute: minute,
+                repeats: true,
+              },
+            });
+          }
           count++;
         }
       }
 
-      Alert.alert(
-        "Success ✨", 
-        `Nai-set na ang iyong ${count} Smart Reminders! Sisikat ang notification ayon sa pinili mong oras.`
-      );
+      // Cross-platform dialogue window deployment (Gumagana na sa Mobile at Web Interface View)
+      const successTitle = "Success ✨";
+      const successMessage = `Nai-set at matagumpay na na-sync ang iyong ${count} Smart Reminders ayon sa pinili mong oras.`;
+
+      if (Platform.OS === 'web') {
+        window.alert(`${successTitle}\n\n${successMessage}`);
+      } else {
+        Alert.alert(successTitle, successMessage);
+      }
     } catch (error) {
-      Alert.alert("System Error", "Hindi ma-sync ang notifications. Pakisubukang muli.");
+      if (Platform.OS === 'web') {
+        window.alert("System Error: Hindi ma-sync ang notifications. Pakisubukang muli.");
+      } else {
+        Alert.alert("System Error", "Hindi ma-sync ang notifications. Pakisubukang muli.");
+      }
     }
   };
 
@@ -130,22 +144,21 @@ export default function NotificationSetup() {
     setSettings(newSettings);
     await AsyncStorage.setItem('@notif_settings', JSON.stringify(newSettings));
     
-    if (newValue) showSyncReminder(); // Paalala kapag nag-ON
+    showSyncReminder(); // Nagpapakita na ng paalala sa tuwing binabago ang switch state
   };
 
   const handleTimePress = (id) => {
     const current = times[id] || "20:00";
-    const msg = `Format: HH:MM (24-hour)\nNgayon: ${formatTo12Hr(current)}\n\nHalimbawa:\n08:00 (8 AM)\n20:00 (8 PM)`;
+    const msg = `Format: HH:MM (24-hour style)\nNgayon: ${formatTo12Hr(current)}\n\nHalimbawa:\n08:00 (8 AM)\n20:00 (8 PM)`;
     
     if (Platform.OS === 'web') {
       const newTime = window.prompt(msg, current);
       if (newTime && /^([01]\d|2[0-3]):([0-5]\d)$/.test(newTime)) {
         updateTime(id, newTime);
       } else if (newTime) {
-        alert("Maling format! Gamitin ang HH:MM (e.g. 07:30)");
+        window.alert("Maling format! Gamitin ang tamang HH:MM rules (e.g. 07:30)");
       }
     } else {
-      // Temporary fallback para sa mobile prompt
       Alert.prompt(
         "I-set ang Oras (24-Hour)",
         msg,
@@ -169,13 +182,13 @@ export default function NotificationSetup() {
     const newTimes = { ...times, [id]: newTime };
     setTimes(newTimes);
     await AsyncStorage.setItem('@notif_times', JSON.stringify(newTimes));
-    showSyncReminder(); // Paalala kapag nagbago ng oras
+    showSyncReminder(); // Trigger feedback alert card tuwing magbabago ang oras
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <MaterialCommunityIcons name="bell-ring" size={20} color="#26f7ff" />
+        <MaterialCommunityIcons name="bell-ring" size={24} color="#26f7ff" />
         <Text style={styles.sectionTitle}>DAILY SMART NOTIFICATION</Text>
       </View>
       
@@ -187,23 +200,27 @@ export default function NotificationSetup() {
         {ACTIVITIES.map((act) => (
           <View key={act.id} style={styles.notifRow}>
             <View style={styles.leftGroup}>
-              <MaterialCommunityIcons 
-                name={act.icon} 
-                size={22} 
-                color={settings[act.id] ? act.color : "#444"} 
-              />
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons 
+                  name={act.icon} 
+                  size={24} 
+                  color={settings[act.id] ? act.color : "#8a8f9e"} 
+                />
+              </View>
               <View style={styles.labelGroup}>
-                <Text style={[styles.actLabel, settings[act.id] && styles.activeLabel]}>{act.label}</Text>
+                <Text style={[styles.actLabel, settings[act.id] && styles.activeLabel]}>
+                  {act.label}
+                </Text>
                 {settings[act.id] && (
-                  <TouchableOpacity onPress={() => handleTimePress(act.id)}>
+                  <TouchableOpacity onPress={() => handleTimePress(act.id)} activeOpacity={0.6}>
                     <Text style={styles.timeLink}>Remind at: {formatTo12Hr(times[act.id])}</Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
             <Switch
-              trackColor={{ false: "#222", true: "rgba(38, 247, 255, 0.3)" }}
-              thumbColor={settings[act.id] ? "#26f7ff" : "#666"}
+              trackColor={{ false: "#232329", true: "rgba(38, 247, 255, 0.4)" }}
+              thumbColor={settings[act.id] ? "#26f7ff" : "#8a8f9e"}
               onValueChange={() => toggleSwitch(act.id)}
               value={settings[act.id] || false}
             />
@@ -211,14 +228,14 @@ export default function NotificationSetup() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.syncBtn} onPress={scheduleAllNotifications}>
+      <TouchableOpacity style={styles.syncBtn} onPress={scheduleAllNotifications} activeOpacity={0.8}>
         <Text style={styles.syncText}>SYNC & SCHEDULE NOTIFICATIONS</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-// Helper function para sa Permissions
+// Helper function para sa Permissions engine verification
 async function registerForPushNotificationsAsync() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -240,17 +257,47 @@ async function registerForPushNotificationsAsync() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#161616', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#222', marginBottom: 20, width: '95%', alignSelf: 'center' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { color: '#fff', fontSize: 12, fontWeight: '900', marginLeft: 10, letterSpacing: 1 },
-  description: { color: '#fff', fontSize: 12, lineHeight: 18, marginBottom: 20, fontWeight: '400' },
+  // Premium Material Dark (High Contrast Base Layer Settings)
+  container: { 
+    backgroundColor: '#121214', 
+    borderRadius: 16, 
+    padding: 20, 
+    borderWidth: 1, 
+    borderColor: '#2c303b', 
+    marginBottom: 20, 
+    width: '100%', 
+    alignSelf: 'center' 
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: { color: '#26f7ff', fontSize: 13, fontWeight: '900', marginLeft: 12, letterSpacing: 1.5 },
+  description: { color: '#a2a8b6', fontSize: 12, lineHeight: 18, marginBottom: 20, fontWeight: '500' },
   listContainer: { marginBottom: 10 },
-  notifRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 0.5, borderBottomColor: '#222' },
+  
+  notifRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingVertical: 16, 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#1e2026' 
+  },
   leftGroup: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  labelGroup: { marginLeft: 15 },
-  actLabel: { color: '#555', fontSize: 14, fontWeight: '500' },
-  activeLabel: { color: '#eee' },
-  timeLink: { color: '#26f7ff', fontSize: 11, marginTop: 4, fontWeight: 'bold' },
-  syncBtn: { backgroundColor: '#26f7ff', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 15 },
-  syncText: { color: '#000', fontWeight: '900', fontSize: 11, letterSpacing: 1 }
+  iconContainer: { width: 30, alignItems: 'center', justifyContent: 'center' },
+  labelGroup: { marginLeft: 12, flex: 1 },
+  
+  actLabel: { color: '#8a8f9e', fontSize: 15, fontWeight: '700' },
+  activeLabel: { color: '#ffffff', fontWeight: '900' },
+  timeLink: { color: '#26f7ff', fontSize: 12, marginTop: 5, fontWeight: '900', textDecorationLine: 'underline' },
+  
+  syncBtn: { 
+    backgroundColor: '#26f7ff', 
+    padding: 16, 
+    borderRadius: 12, 
+    alignItems: 'center', 
+    marginTop: 20,
+    shadowColor: '#26f7ff',
+    shadowOpacity: 0.2,
+    shadowRadius: 10
+  },
+  syncText: { color: '#000000', fontWeight: '900', fontSize: 12, letterSpacing: 1 }
 });

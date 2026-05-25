@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch, Platform, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -9,10 +9,17 @@ export default function OnlineMission() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [logs, setLogs] = useState([]);
   
-  // Web-Compatible Date logic
-  const today = new Date();
-  const webDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
-  const [date] = useState(webDate);
+  // Web-Compatible Date Initialization Formatter (YYYY-MM-DD for standard calendar field sync)
+  const getTodayString = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // State holds the custom chosen calendar date modified by the user
+  const [date, setDate] = useState(getTodayString());
 
   useEffect(() => { 
     loadLogs(); 
@@ -34,7 +41,7 @@ export default function OnlineMission() {
 
     const newLog = {
       id: Date.now().toString(),
-      date: date,
+      date: date, // Dynamic user-selected interactive date
       content: selectedContent,
       mark: mark,
       timestamp: new Date().toISOString()
@@ -47,7 +54,7 @@ export default function OnlineMission() {
       
       Alert.alert("ONLINE MISSION", "Wow, Good Job po today😊");
       
-      // Reset fields
+      // Reset fields (keeping current date selection state intact for continuous entries)
       setSelectedContent('');
       setIsCompleted(false);
     } catch (e) {
@@ -60,9 +67,26 @@ export default function OnlineMission() {
       <Text style={styles.headerTitle}>ONLINE MISSION</Text>
 
       <Text style={styles.label}>DATE FIELD</Text>
-      <View style={styles.inputBox}>
-        <Text style={styles.inputText}>{date}</Text>
-        <MaterialCommunityIcons name="calendar-check" size={18} color="#2ecc71" />
+      <View style={styles.inputBoxWrapper}>
+        {Platform.OS === 'web' ? (
+          <input 
+            type="date" 
+            value={date} 
+            onChange={(e) => setDate(e.target.value)} 
+            style={styles.webDate} 
+          />
+        ) : (
+          <View style={styles.nativeDateContainer}>
+            <TextInput 
+              style={styles.inputText}
+              value={date}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#8a8f9e"
+              onChangeText={setDate}
+            />
+            <MaterialCommunityIcons name="calendar-check" size={20} color="#2ecc71" />
+          </View>
+        )}
       </View>
 
       <Text style={styles.label}>ONLINE CONTENT (TITLE)</Text>
@@ -73,13 +97,14 @@ export default function OnlineMission() {
           style={styles.picker}
           dropdownIconColor="#2ecc71"
         >
-          <Picker.Item label="Select Content No." value="" color="#888" />
+          <Picker.Item label="Select Content No." value="" color="#8a8f9e" />
           {[...Array(10)].map((_, i) => (
             <Picker.Item 
               key={i} 
               label={`Content ${i + 1}`} 
               value={`Content ${i + 1}`} 
-              color="#000" 
+              color={Platform.OS === 'web' ? '#0c0c0c' : '#0e0d0d'} 
+              style={styles.pickerItemBackend}
             />
           ))}
         </Picker>
@@ -87,14 +112,14 @@ export default function OnlineMission() {
 
       {/* Switch Status Section */}
       <View style={styles.switchRow}>
-        <Text style={[styles.statusText, { color: isCompleted ? '#444' : '#2ecc71' }]}>Partial</Text>
+        <Text style={[styles.statusText, { color: isCompleted ? '#8a8f9e' : '#2ecc71' }]}>Partial</Text>
         <Switch
           value={isCompleted}
           onValueChange={setIsCompleted}
-          trackColor={{ false: '#333', true: '#2ecc71' }}
-          thumbColor={isCompleted ? '#fff' : '#f4f3f4'}
+          trackColor={{ false: '#232329', true: 'rgba(46, 204, 113, 0.4)' }}
+          thumbColor={isCompleted ? '#2ecc71' : '#8a8f9e'}
         />
-        <Text style={[styles.statusText, { color: isCompleted ? '#2ecc71' : '#444' }]}>Completed</Text>
+        <Text style={[styles.statusText, { color: isCompleted ? '#2ecc71' : '#8a8f9e' }]}>Completed</Text>
       </View>
 
       <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
@@ -108,7 +133,7 @@ export default function OnlineMission() {
           <Text style={[styles.hCell, { flex: 1 }]}>Date</Text>
           <Text style={[styles.hCell, { flex: 1 }]}>Content No</Text>
           <Text style={[styles.hCell, { flex: 1 }]}>Mark</Text>
-          <Text style={[styles.hCell, { width: 40, textAlign: 'right' }]}>Act</Text>
+          <Text style={[styles.hCell, { width: 40, textAlign: 'right' }]}>ACT</Text>
         </View>
         
         {/* ScrollView for the list to handle more than 5 logs */}
@@ -117,13 +142,15 @@ export default function OnlineMission() {
             {logs.map((item) => (
               <View key={item.id} style={styles.tableRow}>
                 <Text style={styles.rCell}>{item.date}</Text>
-                <Text style={styles.rCell}>{item.content}</Text>
-                <Text style={[styles.rCell, { color: item.mark === 'COMPLETED' ? '#2ecc71' : '#f1c40f' }]}>
+                <Text style={[styles.rCell, { color: '#ffffff', fontWeight: '500' }]}>{item.content}</Text>
+                <Text style={[styles.rCell, { color: item.mark === 'COMPLETED' ? '#2ecc71' : '#f1c40f', fontWeight: '900' }]}>
                   {item.mark}
                 </Text>
-                <TouchableOpacity style={{ width: 40, alignItems: 'flex-end' }}>
-                  <MaterialCommunityIcons name="pencil" size={16} color="#2ecc71" />
-                </TouchableOpacity>
+                <View style={{ width: 40, alignItems: 'flex-end' }}>
+                  <TouchableOpacity>
+                    <MaterialCommunityIcons name="pencil" size={18} color="#2ecc71" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -134,31 +161,47 @@ export default function OnlineMission() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#0f0f0f' },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
-  label: { color: '#2ecc71', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
-  inputBox: { 
+  container: { padding: 20, backgroundColor: '#050505' },
+  headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
+  label: { color: '#2ecc71', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  
+  // Custom High Contrast Calendar Input Layouts
+  inputBoxWrapper: { marginBottom: 20 },
+  nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#1a1a1a', padding: 12, borderRadius: 8, marginBottom: 20,
-    borderWidth: 1, borderColor: '#222'
+    backgroundColor: '#121214', padding: 12, borderRadius: 8,
+    borderWidth: 1, borderColor: '#2c303b'
   },
-  inputText: { color: '#fff', fontSize: 14 },
-  pickerWrap: { backgroundColor: '#fff', borderRadius: 8, marginBottom: 15, overflow: 'hidden' },
-  picker: { color: '#000', height: 50 },
+  inputText: { color: '#4ef09c', fontSize: 14, flex: 1 },
+  webDate: { 
+    backgroundColor: '#121214', color: '#50e98d', border: '1px solid #3feb6a', 
+    padding: '12px', borderRadius: '8px', width: '50%', fontSize: '14px', 
+    fontFamily: 'inherit', outline: 'none' 
+  },
+
+  pickerWrap: { 
+    backgroundColor: '#121214', 
+    borderRadius: 8, marginBottom: 15, overflow: 'hidden',
+    borderWidth: 1, borderColor: '#2c303b'
+  },
+  picker: { color: '#121111', height: 50 },
+  pickerItemBackend: { backgroundColor: '#121214', color: '#ffffff' },
+
   switchRow: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', 
-    gap: 15, marginVertical: 15, backgroundColor: '#151515', padding: 15, borderRadius: 12
+    gap: 15, marginVertical: 15, backgroundColor: '#18181c', padding: 15, borderRadius: 12,
+    borderWidth: 1, borderColor: '#232329'
   },
-  statusText: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
+  statusText: { fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
   submitBtn: { backgroundColor: '#2ecc71', padding: 16, borderRadius: 10, alignItems: 'center', marginBottom: 30 },
-  submitText: { color: '#000', fontWeight: '900', letterSpacing: 1 },
+  submitText: { color: '#000000', fontWeight: '900', letterSpacing: 1 },
   
-  // Table Styles
+  // High Contrast Table Layout Config
   logsContainer: { marginTop: 10, paddingBottom: 40 },
-  logTitle: { color: '#fff', fontSize: 11, fontWeight: 'bold', marginBottom: 10, opacity: 0.8 },
-  tableHeader: { flexDirection: 'row', backgroundColor: '#1a1a1a', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#333' },
-  hCell: { color: '#888', fontSize: 9, fontWeight: 'bold' },
-  listWrapper: { maxHeight: 200 }, // Scroll limit para sa list
-  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#222', alignItems: 'center' },
-  rCell: { color: '#ccc', fontSize: 10, flex: 1 }
+  logTitle: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 12, letterSpacing: 0.5 },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#18181c', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' },
+  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // Shifted to higher visibility contrast
+  listWrapper: { maxHeight: 200 }, 
+  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
+  rCell: { color: '#ffffff', fontSize: 10, flex: 1, fontWeight: '500' }
 });

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import useAuthStore from '../store/authStore';
+import { supabase } from '../utils/supabase'; // Tiyak na koneksyon para sa live branch ranking data
 
 // SIGURADONG TAMA NA PATHS PARA SA COMPONENTS
 import GoalForm from './dashboard/GoalForm';
@@ -13,13 +14,15 @@ import AttendanceCard from './dashboard/AttendanceCard';
 
 const { width } = Dimensions.get('window');
 
+// MATERIAL DARK UI: Pinataas ang contrast ng text at subtext para sa malinis na readability
 const COLORS = {
-  primary: '#26f7ff',
-  background: '#050505',
-  card: '#111',
-  text: '#ffffff',
+  primary: '#26f7ff',       // Cyan Highlight
+  background: '#050505',    // Deep Canvas Background
+  card: '#121214',          // Slightly elevated Material Dark Card background
+  text: '#ffffff',          // Pure White for Main Headings
   accent: '#ff4d4d',
-  subtext: '#666',
+  subtext: '#a0a5b5',       // Mula #666, itinaas sa Soft Slate Gray para mas madaling mabasa ang mga labels
+  silver: '#e1e4ed',        // Bagong dagdag para sa high-contrast body text
   white: '#ffffff'
 };
 
@@ -31,6 +34,10 @@ export default function Dashboard() {
    */
   const { userProfile, role, savedGoal, setSavedGoal, loadSavedGoal } = useAuthStore();
   const [goalModalVisible, setGoalModalVisible] = useState(false);
+
+  // REALTIME STATE PARA SA LIVE RANKING CARD
+  const [activeWorkers, setActiveWorkers] = useState([]);
+  const [loadingWorkers, setLoadingWorkers] = useState(true);
 
   /**
    * INITIAL LOAD & SYNC
@@ -44,19 +51,43 @@ export default function Dashboard() {
     }
   }, [userProfile?.zion_code]);
 
-  // DATA PARA SA RANKING (Top 10 Gospel Workers)
-  const TOP_WORKERS_DATA = [
-    { id: 1, name: 'Bro. Edgar', groupAge: 'MA', preachPct: '98', activityPct: '95' },
-    { id: 2, name: 'Sis. Maria', groupAge: 'FA', preachPct: '92', activityPct: '88' },
-    { id: 3, name: 'Bro. Juan', groupAge: 'MA', preachPct: '89', activityPct: '90' },
-    { id: 4, name: 'Sis. Elena', groupAge: 'FYW', preachPct: '85', activityPct: '82' },
-    { id: 5, name: 'Bro. Luis', groupAge: 'MYW', preachPct: '80', activityPct: '75' },
-    { id: 6, name: 'Sis. Ana', groupAge: 'FA', preachPct: '78', activityPct: '80' },
-    { id: 7, name: 'Bro. Mark', groupAge: 'MYU', preachPct: '75', activityPct: '70' },
-    { id: 8, name: 'Sis. Joy', groupAge: 'FYU', preachPct: '72', activityPct: '74' },
-    { id: 9, name: 'Bro. Sam', groupAge: 'MMS', preachPct: '70', activityPct: '68' },
-    { id: 10, name: 'Sis. Lea', groupAge: 'FMS', preachPct: '65', activityPct: '60' },
-  ];
+  /**
+   * DYNAMIC MULTI-TENANCY FETCHING LOGIC
+   * Hinahatak ang totoong profiles data base sa branch isolation (zion_code) ng naka-login na admin.
+   */
+  const fetchBranchRankings = async () => {
+    try {
+      if (!userProfile?.zion_code) return;
+      
+      console.log("📡 DASHBOARD: Fetching live rankings for branch:", userProfile.zion_code);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_name, group_age, preach_pct, activity_pct')
+        .eq('zion_code', userProfile.zion_code)
+        .order('preach_pct', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (data) {
+        setActiveWorkers(data);
+      }
+    } catch (err) {
+      console.error("❌ DASHBOARD: Error fetching branch rankings:", err.message);
+    } finally {
+      setLoadingWorkers(false);
+    }
+  };
+
+  /**
+   * RANKING POLLING TIMER
+   */
+  useEffect(() => {
+    fetchBranchRankings();
+    const rankInterval = setInterval(fetchBranchRankings, 10000);
+    return () => clearInterval(rankInterval);
+  }, [userProfile?.zion_code]);
 
   const currentMonth = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date());
 
@@ -66,7 +97,6 @@ export default function Dashboard() {
 
   /**
    * UPDATED SAVE HANDLER
-   * Ngayon ay async na ito para matiyak na tapos ang upload sa Supabase bago isara ang modal.
    */
   const handleSaveGoal = async (newData) => {
     console.log("💾 DASHBOARD: Initiating Cloud Save...");
@@ -162,7 +192,7 @@ export default function Dashboard() {
                 </View>
             </ScrollView>
 
-            {/* CONDITIONAL RENDERING: Admin lang ang may access sa Set Goal button */}
+            {/* CONDITIONAL RENDERING */}
             {role === 'super_admin' && (
               <TouchableOpacity 
                 style={styles.setGoalBtn} 
@@ -175,7 +205,7 @@ export default function Dashboard() {
 
           {/* 2. RANKING CARD (Top Active Workers) */}
           <View style={styles.rankingHalfCard}>
-             <RankingCard rankingData={TOP_WORKERS_DATA} />
+             <RankingCard rankingData={activeWorkers} />
           </View>
 
         </View>
@@ -207,9 +237,9 @@ const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: COLORS.background },
   scrollContent: { padding: 20, paddingBottom: 100 },
   headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 15, marginBottom: 25, paddingTop: 5 },
-  welcomeTitle: { color: COLORS.subtext, fontSize: 14, fontWeight: '800' },
-  userName: { color: '#f4f1f1', fontSize: 26, fontWeight: '900', letterSpacing: 0.5, marginTop: 2 },
-  zionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#222' },
+  welcomeTitle: { color: COLORS.subtext, fontSize: 14, fontWeight: '800' }, // Itinaas sa Slate Gray para mabasa agad
+  userName: { color: '#ffffff', fontSize: 26, fontWeight: '900', letterSpacing: 0.5, marginTop: 2 }, // Pure White
+  zionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#16161a', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#2d3139' },
   zionCodeText: { color: COLORS.primary, fontSize: 11, fontWeight: 'bold', marginLeft: 5 },
   avatarWrapper: { position: 'relative', marginTop: 2 },
   avatarImg: { width: 65, height: 65, borderRadius: 32.5, borderWidth: 2, borderColor: COLORS.primary },
@@ -223,22 +253,22 @@ const styles = StyleSheet.create({
     borderRadius: 20, 
     padding: 15, 
     borderWidth: 1, 
-    borderColor: '#222',
+    borderColor: '#232329', // Mas maliwanag na border contrast para sa Material Dark standard
     minHeight: 400, 
   },
   rankingHalfCard: { width: '41%' },
   goalHeaderRow: { marginBottom: 12 },
-  goalCardMainTitle: { color: '#eee', fontSize: 13, fontWeight: '700' },
+  goalCardMainTitle: { color: '#ffffff', fontSize: 13, fontWeight: '700' }, // Pure White
   goalMonthSub: { color: COLORS.primary, fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginTop: 4 },
   
   goalLayersScroll: { flex: 1, marginVertical: 5 },
-  goalLayer: { borderBottomWidth: 1, borderBottomColor: '#222', paddingVertical: 12 },
-  layerTitleText: { color: COLORS.subtext, fontSize: 10, fontWeight: '900', marginBottom: 10, letterSpacing: 0.5 },
+  goalLayer: { borderBottomWidth: 1, borderBottomColor: '#232329', paddingVertical: 12 },
+  layerTitleText: { color: COLORS.primary, fontSize: 10, fontWeight: '900', marginBottom: 10, letterSpacing: 0.5 }, // Ginawang Cyan para madaling makilala ang sub-sections
   
   attCenterBlock: { alignItems: 'center', justifyContent: 'center' },
-  attSubLabel: { color: '#888', fontSize: 10, marginBottom: 4, fontWeight: '700' },
+  attSubLabel: { color: COLORS.silver, fontSize: 10, marginBottom: 4, fontWeight: '700' }, // Mula #888 ginawang Silver Gray
   attValueRow: { flexDirection: 'row', alignItems: 'baseline' },
-  attPrefix: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+  attPrefix: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
   attNumber: { color: COLORS.primary, fontSize: 18, fontWeight: '900' },
   
   preachGrid: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 5 },
@@ -247,12 +277,12 @@ const styles = StyleSheet.create({
   whiteMiniLabel: { color: COLORS.white, fontSize: 10, fontWeight: 'bold', marginTop: 2 },
   
   evaEntry: { marginBottom: 12, paddingLeft: 5 },
-  evaNameText: { color: COLORS.primary, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
-  evaDetailText: { color: '#888', fontSize: 10, fontWeight: '700', marginTop: 1 },
+  evaNameText: { color: COLORS.white, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 }, // Binigyan ng high-contrast text color
+  evaDetailText: { color: COLORS.subtext, fontSize: 10, fontWeight: '700', marginTop: 1 }, // Silver text mula sa madilim na gray
 
-  emptyText: { color: '#333', fontSize: 11, fontStyle: 'italic', marginTop: 8 },
-  setGoalBtn: { backgroundColor: 'rgba(38, 247, 255, 0.1)', padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(38, 247, 255, 0.3)', marginTop: 10 },
+  emptyText: { color: COLORS.subtext, fontSize: 11, fontStyle: 'italic', marginTop: 8 }, // Madaling basahin kapag walang evangelists
+  setGoalBtn: { backgroundColor: 'rgba(38, 247, 255, 0.1)', padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(38, 247, 255, 0.4)', marginTop: 10 },
   setGoalText: { color: COLORS.primary, fontSize: 12, fontWeight: 'bold' },
   footerBrandWrapper: { marginTop: 10 },
-  footerBrand: { color: '#1a1a1a', textAlign: 'center', fontSize: 10, fontWeight: 'bold' }
+  footerBrand: { color: '#33333d', textAlign: 'center', fontSize: 10, fontWeight: 'bold' } // Itinaas ng bahagya mula sa #1a1a1a para mabasa pa rin ang brand imprint
 });

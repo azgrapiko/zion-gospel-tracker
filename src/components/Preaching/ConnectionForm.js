@@ -54,7 +54,7 @@ export default function ConnectionForm({
               style={styles.input}
               value={dateMet}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#444"
+              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
               onChangeText={setDateMet}
             />
           )}
@@ -73,7 +73,7 @@ export default function ConnectionForm({
               style={styles.input}
               value={promiseDate}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#444"
+              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
               onChangeText={setPromiseDate}
             />
           )}
@@ -88,14 +88,14 @@ export default function ConnectionForm({
           placeholder="First Name" 
           value={listener} 
           onChangeText={setListener} 
-          placeholderTextColor="#444" 
+          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
         />
         <TextInput 
           style={[styles.input, {flex: 1}]} 
           placeholder="Phone / Messenger" 
           value={contact} 
           onChangeText={setContact} 
-          placeholderTextColor="#444" 
+          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
         />
       </View>
 
@@ -105,7 +105,7 @@ export default function ConnectionForm({
         placeholder="Location of Listener" 
         value={location} 
         onChangeText={setLocation} 
-        placeholderTextColor="#444" 
+        placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
       />
 
       {/* 3. DROPDOWNS ROW 1 */}
@@ -155,7 +155,7 @@ export default function ConnectionForm({
         placeholder="Member 1 (Lead)" 
         value={m1} 
         onChangeText={setM1} 
-        placeholderTextColor="#444" 
+        placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
       />
       <View style={styles.infoGrid}>
         <TextInput 
@@ -163,14 +163,14 @@ export default function ConnectionForm({
           placeholder="Member 2" 
           value={m2} 
           onChangeText={setM2} 
-          placeholderTextColor="#444" 
+          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
         />
         <TextInput 
           style={[styles.input, {flex: 1, marginTop: 8}]} 
           placeholder="Member 3" 
           value={m3} 
           onChangeText={setM3} 
-          placeholderTextColor="#444" 
+          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
         />
       </View>
 
@@ -180,15 +180,15 @@ export default function ConnectionForm({
           <Text style={[styles.statusText, {color: isValid ? '#26f7ff' : '#ffaa00'}]}>
             {isValid ? "VALID PREACHING" : "POTENTIAL VALID"}
           </Text>
-          <Text style={{color: '#777', fontSize: 10, fontWeight: 'bold'}}>
+          <Text style={{color: '#a2a8b6', fontSize: 11, fontWeight: '900', marginTop: 2}}>
             I-switch kung ito ay naging Valid na.
           </Text>
         </View>
         <Switch 
           value={Boolean(isValid)} 
           onValueChange={(val) => setIsValid(val)} 
-          trackColor={{ false: "#333", true: "rgba(38, 247, 255, 0.4)" }} 
-          thumbColor={isValid ? "#26f7ff" : "#555"} 
+          trackColor={{ false: "#232329", true: "rgba(38, 247, 255, 0.4)" }} 
+          thumbColor={isValid ? "#26f7ff" : "#8a8f9e"} 
         />
       </View>
 
@@ -208,7 +208,8 @@ export default function ConnectionForm({
       </TouchableOpacity>
 
       {/* 8. LOGS TABLE */}
-      <Text style={[styles.sectionLabel, {marginTop: 40, color: '#444'}]}>CONNECTION LOGS</Text>
+      {/* HIGH CONTRAST FIXED: Iniangat ang kulay ng section label mula sa madilim na #444 */}
+      <Text style={[styles.sectionLabel, {marginTop: 40, color: '#a2a8b6'}]}>CONNECTION LOGS</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={true}>
         <View style={{paddingBottom: 40}}>
           <View style={styles.tableHeader}>
@@ -224,10 +225,10 @@ export default function ConnectionForm({
             logs.map(log => (
               <View key={log.id} style={styles.tableRow}>
                 <Text style={[styles.td, {width: 60}]}>{log.date ? log.date.slice(5) : '--'}</Text>
-                <Text style={[styles.td, {width: 100, color: '#fff', fontWeight: 'bold'}]}>{log.listener}</Text>
-                <Text style={[styles.td, {width: 50}]}>{log.age}</Text>
-                <Text style={[styles.td, {width: 120, fontSize: 10}]}>{log.location}</Text>
-                <Text style={[styles.td, {width: 120, color: log.isValid ? '#26f7ff' : '#ffaa00', fontWeight: 'bold'}]}>
+                <Text style={[styles.td, {width: 100, color: '#ffffff', fontWeight: '900'}]}>{log.listener}</Text>
+                <Text style={[styles.td, {width: 50, color: '#ffffff', fontWeight: '500'}]}>{log.age}</Text>
+                <Text style={[styles.td, {width: 120, fontSize: 10, color: '#ffffff'}]}>{log.location}</Text>
+                <Text style={[styles.td, {width: 120, color: log.isValid ? '#26f7ff' : '#ffaa00', fontWeight: '900'}]}>
                   {log.isValid ? 'VALID' : 'POTENTIAL'}
                 </Text>
                 <View style={{width: 80, flexDirection: 'row', justifyContent: 'space-evenly'}}>
@@ -241,7 +242,8 @@ export default function ConnectionForm({
               </View>
             ))
           ) : (
-            <Text style={{ color: '#444', fontSize: 10, marginTop: 15 }}>No connection logs found.</Text>
+            // HIGH CONTRAST FIXED
+            <Text style={{ color: '#a2a8b6', fontSize: 11, marginTop: 15, fontWeight: '700' }}>No connection logs found.</Text>
           )}
         </View>
       </ScrollView>
@@ -252,20 +254,20 @@ export default function ConnectionForm({
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 8 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sectionLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
-  zionBadge: { backgroundColor: 'rgba(38, 247, 255, 0.1)', color: '#26f7ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: 'bold', borderWidth: 1, borderColor: '#26f7ff' },
+  sectionLabel: { color: '#26f7ff', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+  zionBadge: { backgroundColor: 'rgba(38, 247, 255, 0.12)', color: '#26f7ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, fontSize: 10, fontWeight: '900', borderWidth: 1, borderColor: '#26f7ff' },
   miniLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 8, marginTop: 15, textTransform: 'uppercase', letterSpacing: 1 },
-  input: { backgroundColor: '#111', color: '#FFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#333' },
+  input: { backgroundColor: '#121214', color: '#FFFFFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#2c303b' },
   infoGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  webDate: { backgroundColor: '#111', color: '#fff', border: '1px solid #333', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit', outline: 'none' },
-  webSelect: { backgroundColor: '#111', color: '#fff', border: '1px solid #333', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit' },
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0a0a0a', padding: 16, borderRadius: 12, marginTop: 25, borderWidth: 1, borderColor: '#222' },
+  webDate: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit', outline: 'none' },
+  webSelect: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit', outline: 'none' },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#18181c', padding: 16, borderRadius: 12, marginTop: 25, borderWidth: 1, borderColor: '#232329' },
   statusText: { fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   saveBtn: { backgroundColor: '#26f7ff', padding: 18, borderRadius: 12, marginTop: 25, alignItems: 'center' },
-  saveBtnText: { color: '#000', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
-  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#333', paddingBottom: 12, marginTop: 20 },
-  th: { color: '#555', fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' },
-  tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#111', alignItems: 'center' },
-  td: { color: '#ccc', fontSize: 11 },
+  saveBtnText: { color: '#000000', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
+  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#2d313d', paddingBottom: 12, marginTop: 20 },
+  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // High-contrast headers mula sa dating #555
+  tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
+  td: { color: '#ffffff', fontSize: 11, fontWeight: '500' },
   inputWrapper: { width: '100%' }
 });
