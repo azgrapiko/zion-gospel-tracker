@@ -39,7 +39,9 @@ export default function RankingCard({ rankingData }) {
     return (
       <View style={[styles.rankRow, rank === 1 && styles.topRankBorder]}>
         <View style={styles.leftInfo}>
+          {/* OPTIMIZED: Pinaliliit ang width clearance ng index number */}
           <Text style={styles.rankNumber}>{rank}</Text>
+          
           <View style={styles.nameGroup}>
             <View style={styles.nameHeader}>
               <Text 
@@ -50,14 +52,14 @@ export default function RankingCard({ rankingData }) {
                 {memberName}
               </Text>
               {groupAge !== '' && (
-                <Text style={styles.groupAgeText}> • {groupAge}</Text>
+                <Text style={styles.groupAgeText} numberOfLines={1}> • {groupAge}</Text>
               )}
             </View>
             
             <View style={styles.statsRow}>
-              <Text style={styles.statLabel}>Preach: </Text>
+              <Text style={styles.statLabel}>Preach:</Text>
               <Text style={styles.statValue}>{preachPct}%</Text>
-              <Text style={[styles.statLabel, {marginLeft: 8}]}>Activity: </Text>
+              <Text style={[styles.statLabel, {marginLeft: 6}]}>Activity:</Text>
               <Text style={styles.statValue}>{activityPct}%</Text>
             </View>
           </View>
@@ -68,7 +70,7 @@ export default function RankingCard({ rankingData }) {
             <Image source={RANK_ICONS[rank]} style={styles.starIcon} />
           ) : (
             // Empty view para sa rank 6-10 para pantay ang layout
-            <View style={{width: 22}} />
+            <View style={{width: 20}} />
           )}
         </View>
       </View>
@@ -115,7 +117,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginBottom: 15,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
@@ -147,8 +149,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.itemBg,
-    paddingVertical: 10, // Optimized spacing
-    paddingHorizontal: 12,
+    paddingVertical: 10, 
+    paddingHorizontal: 10, // Bahagyang pinaluwag para sa inner dynamic text strings
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
@@ -160,36 +162,36 @@ const styles = StyleSheet.create({
   leftInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Powering the flex expansion
-    marginRight: 5,
+    flex: 1, // Powering the flex expansion to prevent horizontal overflow constraints
   },
   rankNumber: {
     color: COLORS.rankCyan,
-    fontSize: 16,
+    fontSize: 14, // Siniksik mula 16 patungong 14 para sa compact scaling
     fontWeight: '900',
-    width: 25,
+    width: 18, // Pinalit mula 25 para mabigyan ng malaking espasyo ang pangalan
     textAlign: 'center'
   },
   nameGroup: {
-    marginLeft: 10,
-    flex: 1, // Essential para sa automatic text wrapping
+    marginLeft: 6, // Pinalit mula 10 upang maiwasang maitulak ang teksto sa gilid
+    flex: 1, 
   },
   nameHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap', // UI Fix: Pinapababa ang GroupAge kung siksikan
+    flex: 1, // Pinipilit ang wrapper na sumunod sa max row layout
   },
   memberName: {
-    color: '#ffffff', // Solid pure white para sa pangalan ng live users
-    fontSize: 12, // Adjusted size para sa better fit
+    color: '#ffffff', 
+    fontSize: 12, 
     fontWeight: 'bold',
-    flexShrink: 1, // UI Fix: Pinipigilan ang pagtulak sa Star Icon
+    flexShrink: 1, // Awtomatikong liliit o puputulin kung siksikan na ang view
   },
   groupAgeText: {
-    color: COLORS.silver, // Iniahon mula #666 para madaling mabasa ang age tier ng rankers
+    color: COLORS.silver, 
     fontSize: 9,
     fontWeight: '700',
-    marginLeft: 4,
+    marginLeft: 2,
+    flexShrink: 1,
   },
   statsRow: {
     flexDirection: 'row',
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   statLabel: {
-    color: COLORS.subtext, // Pinalinaw mula #555 para madaling makita ang "Preach:" at "Activity:" markers
+    color: COLORS.subtext, 
     fontSize: 8,
     fontWeight: 'bold',
   },
@@ -205,15 +207,17 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 8,
     fontWeight: '900',
+    marginLeft: 2,
   },
   rightInfo: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    width: 30, // Fixed width para pantay ang vertical alignment ng stars
+    width: 24, // Optimized structural width pillar link
+    marginLeft: 4,
   },
   starIcon: {
-    width: 20, // UI Fix: Resized mula 24 para hindi siksikan
-    height: 20,
+    width: 16, // Siniksik sa 18 mula 20 para sa eleganteng micro view layout
+    height: 16,
     resizeMode: 'contain',
   },
   emptyContainer: {
@@ -222,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   emptyText: {
-    color: COLORS.subtext, // Madaling basahin kapag walang loading blocks
+    color: COLORS.subtext, 
     fontSize: 11,
     marginTop: 10,
     textAlign: 'center'

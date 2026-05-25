@@ -119,7 +119,7 @@ export default function Sermon({ onClose }) {
         >
           <Picker.Item label="Select Sermon Level" value="" color="#8a8f9e" />
           {SERMON_LEVELS.map((level, index) => (
-            <Picker.Item key={index} label={level} value={level} color={Platform.OS === 'web' ? '#fff' : '#fff'} style={styles.pickerItemBackend} />
+            <Picker.Item key={index} label={level} value={level} color={Platform.OS === 'web' ? '#0e0e0e' : '#0d0d0d'} style={styles.pickerItemBackend} />
           ))}
         </Picker>
       </View>
@@ -134,7 +134,7 @@ export default function Sermon({ onClose }) {
         >
           <Picker.Item label="Select Subject No." value="" color="#8a8f9e" />
           {[...Array(10)].map((_, i) => (
-            <Picker.Item key={i} label={`Subject ${i + 1}`} value={`Subject ${i + 1}`} color={Platform.OS === 'web' ? '#fff' : '#fff'} style={styles.pickerItemBackend} />
+            <Picker.Item key={i} label={`Subject ${i + 1}`} value={`Subject ${i + 1}`} color={Platform.OS === 'web' ? '#090909' : '#080808'} style={styles.pickerItemBackend} />
           ))}
         </Picker>
       </View>
@@ -199,9 +199,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#121214', padding: 12, borderRadius: 8,
     borderWidth: 1, borderColor: '#2c303b'
   },
-  inputText: { color: '#ffffff', fontSize: 14, flex: 1 },
+  inputText: { color: '#f6e100', fontSize: 14, flex: 1 },
   webDate: { 
-    backgroundColor: '#121214', color: '#ffffff', border: '1px solid #d9e317', 
+    backgroundColor: '#141412', color: '#fceb06', border: '1px solid #d9e317', 
     padding: '12px', borderRadius: '8px', width: '50%', fontSize: '14px', 
     fontFamily: 'inherit', outline: 'none' 
   },
@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
     borderRadius: 8, marginBottom: 15, overflow: 'hidden',
     borderWidth: 1, borderColor: '#2c303b'
   },
-  picker: { color: '#ffffff', height: 50 },
-  pickerItemBackend: { backgroundColor: '#121214', color: '#ffffff' },
+  picker: { color: '#070707', height: 50 },
+  pickerItemBackend: { backgroundColor: '#121214', color: '#080808' },
   
   switchRow: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', 
