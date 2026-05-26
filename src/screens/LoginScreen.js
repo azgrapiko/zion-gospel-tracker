@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker'; 
 import { COLORS } from '../styles/theme';
 import { supabase } from '../utils/supabase';
-import useAuthStore from '../store/authStore'; // 1. In-import ang store nang walang { }
+import useAuthStore from '../store/authStore'; 
 
 export default function LoginScreen({ onLogin }) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -18,7 +18,7 @@ export default function LoginScreen({ onLogin }) {
   // Zustand Store Action
   const { setAuth } = useAuthStore();
 
- // --- ADMIN CONFIG ---
+  // --- ADMIN CONFIG ---
   const ADMIN_SECRET_PASSCODE = "Zion1948"; 
   const ADMIN_EMAIL_DOMAIN = "@zion.com"; 
 
@@ -28,7 +28,7 @@ export default function LoginScreen({ onLogin }) {
     "Pulilan", "Guiguinto", "San Rafael", "Hagonoy"
   ];
 
-  // 1. Mapping mula sa Mahabang Pangalan patungong 3-Letter Code
+  // Mapping mula sa Mahabang Pangalan patungong 3-Letter Code
   const ZION_MAP = {
     "Caloocan Main": "CAL",
     "Malabon": "MLB",
@@ -58,7 +58,6 @@ export default function LoginScreen({ onLogin }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [adminPasscode, setAdminPasscode] = useState('');
 
-  // 2. Tiyaking 'zion' state ang chinecheck dito
   const isFormComplete = fullName && zion && groupAge && unit && lmsLevel && usernameInput && emailAddress && password && (password === confirmPassword);
 
   const showAlert = (title, message) => {
@@ -68,6 +67,47 @@ export default function LoginScreen({ onLogin }) {
       Alert.alert(title, message);
     }
   };
+
+  // --- AUTOMATIC RECOVERY DETECTION ---
+  useEffect(() => {
+    const handleRecoverySession = async () => {
+      if (Platform.OS === 'web') {
+        // Tinitingnan kung may recovery tokens sa URL hash fragment mula sa email link
+        const hash = window.location.hash;
+        if (hash && (hash.includes('access_token=') || hash.includes('type=recovery'))) {
+          // Sandaling hintayin ang Supabase auth engine na i-parse ang session token
+          setLoading(true);
+          setTimeout(async () => {
+            const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+            
+            if (session) {
+              const newSecret = window.prompt("Checkpoint Verified! 🔐 Ipasok ang iyong BAGONG PASSWORD (min. 6 chars):");
+              if (newSecret && newSecret.length >= 6) {
+                const { error: updateError } = await supabase.auth.updateUser({
+                  password: newSecret
+                });
+
+                if (updateError) {
+                  showAlert("Update Failed", updateError.message);
+                } else {
+                  showAlert("Success 🎉", "Matagumpay na napalitan ang iyong password! Maaari mo nang gamitin ang bagong password para mag-login.");
+                  // Linisin ang URL hash para hindi mag-loop ang prompt
+                  window.location.hash = "";
+                }
+              } else if (newSecret) {
+                showAlert("Error", "Masyadong maikli ang bagong password na iyong inilagay.");
+              }
+            } else {
+              showAlert("Session Expired", "Luma o expired na ang checkpoint link na ito.");
+            }
+            setLoading(false);
+          }, 1500);
+        }
+      }
+    };
+
+    handleRecoverySession();
+  }, []);
 
   // --- FORGOT PASSWORD / USERNAME RECOVERY SYSTEM ---
   const handleForgotPassword = async () => {
@@ -101,20 +141,16 @@ export default function LoginScreen({ onLogin }) {
       const options = window.confirm(`Account Found!\nUser: ${profile.user_name}\n\nI-click ang OK kung PASSWORD ang gustong palitan.\nI-click ang Cancel kung USERNAME ang gustong palitan.`);
       
       if (options) {
-        const newSecret = window.prompt("Ipasok ang iyong BAGONG PASSWORD (min. 6 chars):");
-        if (newSecret && newSecret.length >= 6) {
-          const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-            redirectTo: window.location.origin
-          });
-          if (resetError) {
-            setLoading(false);
-            showAlert("System Error", resetError.message);
-            return;
-          }
-          showAlert("Security Link Sent", `Ang configuration checkpoint link ay ipinadala sa ${cleanEmail}. Gamitin ito upang ma-verify ang bagong password session.`);
-        } else if (newSecret) {
-          showAlert("Error", "Masyadong maikli ang password.");
+        // Nagpapadala ng opisyal na recovery context link na babalik sa vercel deployment pipeline URL mo
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: window.location.origin
+        });
+        setLoading(false);
+        if (resetError) {
+          showAlert("System Error", resetError.message);
+          return;
         }
+        showAlert("Security Link Sent", `Ang configuration checkpoint link ay ipinadala sa ${cleanEmail}. Gamitin ito upang ma-verify ang bagong password session.`);
       } else {
         const newSetUsername = window.prompt("Ipasok ang iyong BAGONG USERNAME:");
         if (newSetUsername && newSetUsername.trim().length > 2) {
@@ -131,9 +167,10 @@ export default function LoginScreen({ onLogin }) {
             showAlert("Success 🔐", `Ang iyong username ay matagumpay na napalitan sa "${cleanNewUser}"! Maaari mo na itong gamitin sa pag-login.`);
           }
         }
+        setLoading(false);
       }
-      setLoading(false);
     } else {
+      // Native App Recovery System Block
       Alert.alert(
         "Account Recovery Center",
         "Pumili ng nais bawiin o baguhin sa iyong account profile:",
@@ -263,7 +300,6 @@ export default function LoginScreen({ onLogin }) {
 
     } catch (error) {
       setLoading(false);
-      
       if (error.message.includes("profiles_user_name_key")) {
         showAlert("Registration Note", "Ang username na ito ay gamit na. Pakipalitan po ng iba.");
       } else if (error.message.includes("User already registered")) {
