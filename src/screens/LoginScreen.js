@@ -68,48 +68,57 @@ export default function LoginScreen({ onLogin }) {
     }
   };
 
-  // --- AUTOMATIC RECOVERY DETECTION ---
+  // ==========================================
+  // 1. TAGASALO NG RECOVERY LINK (NEW PASS PROMPT)
+  // ==========================================
   useEffect(() => {
-    const handleRecoverySession = async () => {
-      if (Platform.OS === 'web') {
-        // Tinitingnan kung may recovery tokens sa URL hash fragment mula sa email link
-        const hash = window.location.hash;
-        if (hash && (hash.includes('access_token=') || hash.includes('type=recovery'))) {
-          // Sandaling hintayin ang Supabase auth engine na i-parse ang session token
+    // Makinig sa auth events ng Supabase kapag bumalik ang user mula sa email link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      
+      // Huliin kung ang event ay PASSWORD_RECOVERY
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && window.location.hash.includes('type=recovery'))) {
+        if (session) {
           setLoading(true);
+          
+          // Sandaling delay para masiguradong tapos mag-render ang DOM sa Vercel web
           setTimeout(async () => {
-            const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+            const newSecret = window.prompt("Checkpoint Verified! 🔐 Ipasok ang iyong BAGONG PASSWORD (minimum 6 characters):");
             
-            if (session) {
-              const newSecret = window.prompt("Checkpoint Verified! 🔐 Ipasok ang iyong BAGONG PASSWORD (min. 6 chars):");
-              if (newSecret && newSecret.length >= 6) {
-                const { error: updateError } = await supabase.auth.updateUser({
-                  password: newSecret
-                });
+            if (newSecret && newSecret.trim().length >= 6) {
+              const { error: updateError } = await supabase.auth.updateUser({
+                password: newSecret.trim()
+              });
 
-                if (updateError) {
-                  showAlert("Update Failed", updateError.message);
-                } else {
-                  showAlert("Success 🎉", "Matagumpay na napalitan ang iyong password! Maaari mo nang gamitin ang bagong password para mag-login.");
-                  // Linisin ang URL hash para hindi mag-loop ang prompt
-                  window.location.hash = "";
-                }
-              } else if (newSecret) {
-                showAlert("Error", "Masyadong maikli ang bagong password na iyong inilagay.");
+              if (updateError) {
+                showAlert("Update Failed", "Hindi na-update ang password: " + updateError.message);
+              } else {
+                showAlert("Success 🎉", "Matagumpay na napalitan ang iyong password! Maaari mo nang gamitin ang bagong password na ito para mag-login.");
+                
+                // Ligtas na i-sign out ang temporary session para makapag-login sila ng maayos
+                await supabase.auth.signOut();
+                window.location.hash = ""; // Linisin ang URL hash fragment
               }
+            } else if (newSecret) {
+              showAlert("Error", "Masyadong maikli ang bagong password na iyong inilagay. Pakisubukan muli.");
+              await supabase.auth.signOut();
             } else {
-              showAlert("Session Expired", "Luma o expired na ang checkpoint link na ito.");
+              // Kung pinindot ang 'Cancel' sa prompt
+              await supabase.auth.signOut();
             }
             setLoading(false);
-          }, 1500);
+          }, 800);
         }
       }
-    };
+    });
 
-    handleRecoverySession();
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
-  // --- FORGOT PASSWORD / USERNAME RECOVERY SYSTEM ---
+  // ==========================================
+  // 2. TAGAPADALA NG RECOVERY LINK (IYONG KASALUKUYANG CODE)
+  // ==========================================
   const handleForgotPassword = async () => {
     if (Platform.OS === 'web') {
       const emailInput = window.prompt("Recovery System: Ipasok ang iyong Registered Active Email:");
