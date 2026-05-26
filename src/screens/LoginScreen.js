@@ -9,6 +9,11 @@ export default function LoginScreen({ onLogin }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [role, setRole] = useState('Member');
   const [loading, setLoading] = useState(false);
+  
+  // Visibility States para sa Login at Registration password fields
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
   // Zustand Store Action
   const { setAuth } = useAuthStore();
@@ -64,6 +69,132 @@ export default function LoginScreen({ onLogin }) {
     }
   };
 
+  // --- FORGOT PASSWORD / USERNAME RECOVERY SYSTEM ---
+  const handleForgotPassword = async () => {
+    if (Platform.OS === 'web') {
+      const emailInput = window.prompt("Recovery System: Ipasok ang iyong Registered Active Email:");
+      if (!emailInput) return;
+
+      const cleanEmail = emailInput.trim().toLowerCase();
+
+      if (role === 'Admin') {
+        const passCheck = window.prompt("Admin Security Check: Ipasok ang Zion Passcode:");
+        if (passCheck !== ADMIN_SECRET_PASSCODE) {
+          showAlert("Security Denied", "Mali ang Admin Passcode.");
+          return;
+        }
+      }
+
+      setLoading(true);
+      const { data: profile, error: searchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (searchError || !profile) {
+        setLoading(false);
+        showAlert("Error", "Ang email na ito ay hindi rehistrado sa ating database.");
+        return;
+      }
+
+      const options = window.confirm(`Account Found!\nUser: ${profile.user_name}\n\nI-click ang OK kung PASSWORD ang gustong palitan.\nI-click ang Cancel kung USERNAME ang gustong palitan.`);
+      
+      if (options) {
+        const newSecret = window.prompt("Ipasok ang iyong BAGONG PASSWORD (min. 6 chars):");
+        if (newSecret && newSecret.length >= 6) {
+          const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+            redirectTo: window.location.origin
+          });
+          if (resetError) {
+            setLoading(false);
+            showAlert("System Error", resetError.message);
+            return;
+          }
+          showAlert("Security Link Sent", `Ang configuration checkpoint link ay ipinadala sa ${cleanEmail}. Gamitin ito upang ma-verify ang bagong password session.`);
+        } else if (newSecret) {
+          showAlert("Error", "Masyadong maikli ang password.");
+        }
+      } else {
+        const newSetUsername = window.prompt("Ipasok ang iyong BAGONG USERNAME:");
+        if (newSetUsername && newSetUsername.trim().length > 2) {
+          const cleanNewUser = newSetUsername.trim().toLowerCase();
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ user_name: cleanNewUser })
+            .eq('email', cleanEmail);
+
+          if (updateError) {
+            setLoading(false);
+            showAlert("System Error", "Ang username na ito ay maaaring gamit na ng iba.");
+          } else {
+            showAlert("Success 🔐", `Ang iyong username ay matagumpay na napalitan sa "${cleanNewUser}"! Maaari mo na itong gamitin sa pag-login.`);
+          }
+        }
+      }
+      setLoading(false);
+    } else {
+      Alert.alert(
+        "Account Recovery Center",
+        "Pumili ng nais bawiin o baguhin sa iyong account profile:",
+        [
+          { text: "Kanselahin", style: "cancel" },
+          {
+            text: "Username",
+            onPress: () => {
+              Alert.prompt("Username Recovery", "Ipasok ang iyong Registered Active Email:", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Suriin",
+                  onPress: async (nativeEmail) => {
+                    if (!nativeEmail) return;
+                    setLoading(true);
+                    const { data: p, error: e } = await supabase.from('profiles').select('*').eq('email', nativeEmail.trim().toLowerCase()).maybeSingle();
+                    if (e || !p) { setLoading(false); showAlert("Error", "Hindi mahanap ang email."); return; }
+                    
+                    Alert.prompt("Bagong Username", `Account Found! Kasalukuyan: ${p.user_name}\nIpasok ang bagong username:`, [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "I-save",
+                        onPress: async (newUser) => {
+                          const { error: uErr } = await supabase.from('profiles').update({ user_name: newUser.trim().toLowerCase() }).eq('id', p.id);
+                          setLoading(false);
+                          if (uErr) showAlert("Error", "Gamit na ang username.");
+                          else showAlert("Success", "Matagumpay na na-update ang username!");
+                        }
+                      }
+                    ]);
+                  }
+                }
+              ]);
+            }
+          },
+          {
+            text: "Password",
+            onPress: () => {
+              Alert.prompt("Password Reset", "Ipasok ang iyong Registered Active Email:", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Ipadala Link",
+                  onPress: async (nativeEmail) => {
+                    if (!nativeEmail) return;
+                    setLoading(true);
+                    const { error: resetError } = await supabase.auth.resetPasswordForEmail(nativeEmail.trim().toLowerCase(), {
+                      redirectTo: 'ziontracker://update-password'
+                    });
+                    setLoading(false);
+                    if (resetError) showAlert("Error", resetError.message);
+                    else showAlert("Link Sent", "Suriin ang iyong email inbox para sa security verification link.");
+                  }
+                }
+              ]);
+            }
+          }
+        ]
+      );
+    }
+  };
+
   // --- REGISTRATION LOGIC ---
   const handleRegister = async () => {
     if (role === 'Admin') {
@@ -79,54 +210,50 @@ export default function LoginScreen({ onLogin }) {
     setLoading(true);
 
     try {
-      // 1. MAPPING LOGIC (Dapat nasa itaas ito ng signUp)
-const selectedZionCode = ZION_MAP[zion]; 
+      const selectedZionCode = ZION_MAP[zion]; 
 
-if (!selectedZionCode) {
-  setLoading(false);
-  showAlert("Zion Branch Error", "Pakipili po ng tamang Zion Branch Church.");
-  return;
-}
+      if (!selectedZionCode) {
+        setLoading(false);
+        showAlert("Zion Branch Error", "Pakipili po ng tamang Zion Branch Church.");
+        return;
+      }
 
-// 2. SUPABASE AUTH SIGNUP (Updated with zion_code)
-const { data: authData, error: authError } = await supabase.auth.signUp({
-  email: emailAddress.trim().toLowerCase(),
-  password: password,
-  options: {
-    data: {
-      full_name: fullName,
-      user_name: usernameInput.trim().toLowerCase(),
-      role: 'member',
-      zion_code: selectedZionCode, // <--- NAPAKAHALAGA: Dito kukuha ang trigger
-      is_approved: false,          // Default state para sa Admin Approval
-    },
-  },
-});
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: emailAddress.trim().toLowerCase(),
+        password: password,
+        options: {
+          data: {
+            full_name: fullName,
+            user_name: usernameInput.trim().toLowerCase(),
+            role: 'member',
+            zion_code: selectedZionCode, 
+            is_approved: false,          
+          },
+        },
+      });
 
-if (authError) throw authError;
+      if (authError) throw authError;
 
-// 3. INSERT SA PROFILES TABLE (Kasama ang lahat ng fields)
-const { error: profileError } = await supabase
-  .from('profiles')
-  .insert([{ 
-    id: authData.user.id, 
-    user_name: usernameInput.trim().toLowerCase(), 
-    email: emailAddress.trim().toLowerCase(), 
-    full_name: fullName,
-    zion_code: selectedZionCode, // Tiyak na may laman (PLA, CAL, etc.)
-    group_age: groupAge,
-    unit: unit,
-    lms_level: lmsLevel,
-    is_approved: false,
-    role: 'member',
-    tab_access: { dashboard: true, attendance: false, gospel: true, profile: true } 
-  }]);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{ 
+          id: authData.user.id, 
+          user_name: usernameInput.trim().toLowerCase(), 
+          email: emailAddress.trim().toLowerCase(), 
+          full_name: fullName,
+          zion_code: selectedZionCode, 
+          group_age: groupAge,
+          unit: unit,
+          lms_level: lmsLevel,
+          is_approved: false,
+          role: 'member',
+          tab_access: { dashboard: true, attendance: false, gospel: true, profile: true } 
+        }]);
 
-if (profileError) throw profileError;
+      if (profileError) throw profileError;
 
       setLoading(false);
       
-      // 4. SUCCESS ALERT
       showAlert(
         "Successful Registered! 😊", 
         `Welcome, Kapatid na ${fullName}! Please, inform your Leader (Admin) for the approval. God bless you po! 🙇🏻‍♂️`
@@ -137,118 +264,108 @@ if (profileError) throw profileError;
     } catch (error) {
       setLoading(false);
       
-      // 5. SMART ERROR HANDLING
       if (error.message.includes("profiles_user_name_key")) {
         showAlert("Registration Note", "Ang username na ito ay gamit na. Pakipalitan po ng iba.");
       } else if (error.message.includes("User already registered")) {
         showAlert("Registration Note", "Ang email na ito ay may account na. Subukan pong mag-login.");
       } else {
-        // Updated as per your request
         showAlert("Makipag-ugnayan sa iyong Leader (Admin)", error.message);
       }
     }
   };
 
-// --- LOGIN LOGIC ---
-const handleLogin = async () => {
-  if (!usernameInput || !password) {
-    showAlert("Incomplete", "Pakilagay po ang iyong Username at Password.");
-    return;
-  }
-
-  setLoading(true);
-  const identifier = usernameInput.trim();
-  let loginEmail = identifier;
-
-  try {
-    // 1. ADMIN LOGIC
-    if (role === 'Admin') {
-      if (adminPasscode !== ADMIN_SECRET_PASSCODE) {
-        setLoading(false);
-        showAlert("Security Denied", "Mali ang Admin Passcode.");
-        return;
-      }
-      
-      if (!identifier.includes('@')) {
-        loginEmail = `${identifier.toLowerCase()}${ADMIN_EMAIL_DOMAIN}`;
-      } else {
-        loginEmail = identifier.toLowerCase();
-      }
-    }
-    // 2. MEMBER LOGIC (Pinatibay na check para sa Multi-Tenancy)
-    else if (role.toLowerCase() === 'member' && !identifier.includes('@')) {
-      // Gamit ang .trim().toLowerCase() para iwas error sa extra spaces o casing
-      const cleanIdentifier = identifier.trim().toLowerCase();
-
-      const { data: profile, error: searchError } = await supabase
-        .from('profiles')
-        .select('email, is_approved')
-        .eq('user_name', cleanIdentifier)
-        .maybeSingle();
-
-      if (searchError) throw new Error("Database issue: " + searchError.message);
-      
-      if (!profile) {
-        setLoading(false);
-        showAlert("Login Failed", `Ang username na "${identifier}" ay hindi rehistrado.`);
-        return;
-      }
-
-      // Double check kung approved na sa Zion Control Center
-      if (profile.is_approved !== true) {
-        setLoading(false);
-        showAlert("Pending Approval", "Ang iyong account ay hindi pa approved ng Admin.");
-        return;
-      }
-
-      loginEmail = profile.email; // Dito nakuha ang email para sa Auth step
-    }
-
-    // 3. EXECUTE AUTH (Siguraduhing may loginEmail kung Email ang ininput)
-    if (!loginEmail && identifier.includes('@')) {
-      loginEmail = identifier.trim().toLowerCase();
-    }
-
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: password,
-    });
-
-    if (loginError) {
-      setLoading(false);
-      // Mas specific na error handling base sa Supabase Auth response
-      if (loginError.message.includes("Email not confirmed")) {
-        showAlert("Email Verification", "Pakicheck ang iyong email para sa confirmation link.");
-      } else {
-        showAlert("Login Failed", "Mali ang Password o Credentials.");
-      }
+  // --- LOGIN LOGIC ---
+  const handleLogin = async () => {
+    if (!usernameInput || !password) {
+      showAlert("Incomplete", "Pakilagay po ang iyong Username at Password.");
       return;
     }
 
-    // 4. SYNC TO ZUSTAND: Kunin ang buong profile pati tab_access
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    setLoading(true);
+    const identifier = usernameInput.trim();
+    let loginEmail = identifier;
 
-    if (profileError || !profile) {
-      throw new Error("Hindi mahanap ang iyong Profile data.");
+    try {
+      if (role === 'Admin') {
+        if (adminPasscode !== ADMIN_SECRET_PASSCODE) {
+          setLoading(false);
+          showAlert("Security Denied", "Mali ang Admin Passcode.");
+          return;
+        }
+        
+        if (!identifier.includes('@')) {
+          loginEmail = `${identifier.toLowerCase()}${ADMIN_EMAIL_DOMAIN}`;
+        } else {
+          loginEmail = identifier.toLowerCase();
+        }
+      }
+      else if (role.toLowerCase() === 'member' && !identifier.includes('@')) {
+        const cleanIdentifier = identifier.trim().toLowerCase();
+
+        const { data: profile, error: searchError } = await supabase
+          .from('profiles')
+          .select('email, is_approved')
+          .eq('user_name', cleanIdentifier)
+          .maybeSingle();
+
+        if (searchError) throw new Error("Database issue: " + searchError.message);
+        
+        if (!profile) {
+          setLoading(false);
+          showAlert("Login Failed", `Ang username na "${identifier}" ay hindi rehistrado.`);
+          return;
+        }
+
+        if (profile.is_approved !== true) {
+          setLoading(false);
+          showAlert("Pending Approval", "Ang iyong account ay hindi pa approved ng Admin.");
+          return;
+        }
+
+        loginEmail = profile.email; 
+      }
+
+      if (!loginEmail && identifier.includes('@')) {
+        loginEmail = identifier.trim().toLowerCase();
+      }
+
+      const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: password,
+      });
+
+      if (loginError) {
+        setLoading(false);
+        if (loginError.message.includes("Email not confirmed")) {
+          showAlert("Email Verification", "Pakicheck ang iyong email para sa confirmation link.");
+        } else {
+          showAlert("Login Failed", "Mali ang Password o Credentials.");
+        }
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error("Hindi mahanap ang iyong Profile data.");
+      }
+
+      if (profile) {
+        setAuth({ ...profile, user }); 
+      }
+
+      setLoading(false);
+      if (onLogin) onLogin();
+
+    } catch (err) {
+      setLoading(false);
+      showAlert("System Error", err.message);
     }
-
-    // I-set ang store (Zustand) bago mag-onLogin para sa RBAC navigation
-    if (profile) {
-      setAuth({ ...profile, user }); 
-    }
-
-    setLoading(false);
-    if (onLogin) onLogin();
-
-  } catch (err) {
-    setLoading(false);
-    showAlert("System Error", err.message);
-  }
-};
+  };
   
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -279,14 +396,20 @@ const handleLogin = async () => {
               onChangeText={setUsernameInput} 
               autoCapitalize="none" 
             />
+            
             <Text style={styles.label}>PASSWORD:</Text>
-            <TextInput 
-              placeholder="I-type dito..." 
-              placeholderTextColor="#777" 
-              secureTextEntry 
-              style={styles.input} 
-              onChangeText={setPassword} 
-            />
+            <View style={styles.passwordInputContainer}>
+              <TextInput 
+                placeholder="I-type dito..." 
+                placeholderTextColor="#777" 
+                secureTextEntry={!showPassword} 
+                style={styles.passwordInputInner} 
+                onChangeText={setPassword} 
+              />
+              <TouchableOpacity style={styles.eyeButton} onPress={() => setShowPassword(!showPassword)}>
+                <Text style={styles.eyeIcon}>{showPassword ? "👁️" : "🙈"}</Text>
+              </TouchableOpacity>
+            </View>
 
             {role === 'Admin' && (
               <View style={styles.adminExtraSection}>
@@ -303,6 +426,10 @@ const handleLogin = async () => {
 
             <TouchableOpacity style={styles.btnMain} onPress={handleLogin}>
               <Text style={styles.btnText}>PUMASOK (LOGIN)</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleForgotPassword}>
+              <Text style={styles.forgotLinkText}>Forgot Password or Username?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setIsRegistering(true)}>
@@ -366,10 +493,32 @@ const handleLogin = async () => {
             <TextInput placeholder="Email Address..." placeholderTextColor="#777" style={styles.input} onChangeText={setEmailAddress} autoCapitalize="none" keyboardType="email-address" />
             
             <Text style={styles.label}>PASSWORD:</Text>
-            <TextInput placeholder="Password..." placeholderTextColor="#777" secureTextEntry style={styles.input} onChangeText={setPassword} />
+            <View style={styles.passwordInputContainer}>
+              <TextInput 
+                placeholder="Password..." 
+                placeholderTextColor="#777" 
+                secureTextEntry={!showRegPassword} 
+                style={styles.passwordInputInner} 
+                onChangeText={setPassword} 
+              />
+              <TouchableOpacity style={styles.textEyeButton} onPress={() => setShowRegPassword(!showRegPassword)}>
+                <Text style={styles.textEyeLabel}>{showRegPassword ? "HIDE" : "SHOW"}</Text>
+              </TouchableOpacity>
+            </View>
             
             <Text style={styles.label}>CONFIRM PASSWORD:</Text>
-            <TextInput placeholder="Ulitin ang Password..." placeholderTextColor="#777" secureTextEntry style={styles.input} onChangeText={setConfirmPassword} />
+            <View style={styles.passwordInputContainer}>
+              <TextInput 
+                placeholder="Ulitin ang Password..." 
+                placeholderTextColor="#777" 
+                secureTextEntry={!showRegConfirmPassword} 
+                style={styles.passwordInputInner} 
+                onChangeText={setConfirmPassword} 
+              />
+              <TouchableOpacity style={styles.textEyeButton} onPress={() => setShowRegConfirmPassword(!showRegConfirmPassword)}>
+                <Text style={styles.textEyeLabel}>{showRegConfirmPassword ? "HIDE" : "SHOW"}</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity 
               style={[styles.btnMain, { backgroundColor: isFormComplete ? '#2ecc71' : '#444', marginTop: 25 }]} 
@@ -399,6 +548,12 @@ const styles = StyleSheet.create({
   formTitle: { color: '#00ffff', fontSize: 22, fontWeight: 'bold', marginBottom: 25, textAlign: 'center' },
   label: { color: '#00ffff', fontSize: 14, marginBottom: 8, marginLeft: 5, fontWeight: 'bold', letterSpacing: 1 },
   input: { backgroundColor: '#0D1117', borderRadius: 15, padding: 18, color: '#FFFFFF', marginBottom: 22, borderWidth: 2, borderColor: '#30363D', fontSize: 18 },
+  passwordInputContainer: { flexDirection: 'row', backgroundColor: '#0D1117', borderRadius: 15, marginBottom: 22, borderWidth: 2, borderColor: '#30363D', alignItems: 'center', paddingRight: 15 },
+  passwordInputInner: { flex: 1, padding: 18, color: '#FFFFFF', fontSize: 18 },
+  eyeButton: { padding: 5 },
+  eyeIcon: { fontSize: 20 },
+  textEyeButton: { paddingHorizontal: 10, paddingVertical: 5, backgroundColor: 'rgba(0, 255, 255, 0.1)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 255, 255, 0.3)' },
+  textEyeLabel: { color: '#00ffff', fontSize: 12, fontWeight: 'bold', letterSpacing: 1 },
   adminExtraSection: { marginTop: 10, marginBottom: 15, padding: 15, backgroundColor: 'rgba(255, 85, 85, 0.1)', borderRadius: 15 },
   adminNote: { color: '#ff5555', fontSize: 12, marginBottom: 8, fontWeight: 'bold', textAlign: 'center' },
   adminInput: { borderColor: '#ff5555', borderWidth: 2, marginBottom: 0 },
@@ -406,5 +561,6 @@ const styles = StyleSheet.create({
   picker: { color: '#000000', width: '100%', height: 60, fontSize: 18 },
   btnMain: { padding: 20, borderRadius: 18, marginTop: 15, backgroundColor: '#00ffff', width: '100%', alignSelf: 'center' },
   btnText: { color: '#000', textAlign: 'center', fontWeight: '900', fontSize: 20, letterSpacing: 1 },
-  linkText: { color: '#00ffff', fontSize: 15, textAlign: 'center', marginTop: 25, textDecorationLine: 'underline', fontWeight: '500' }
+  forgotLinkText: { color: '#ef4444', fontSize: 14, textAlign: 'center', marginTop: 20, textDecorationLine: 'underline', fontWeight: 'bold' },
+  linkText: { color: '#00ffff', fontSize: 15, textAlign: 'center', marginTop: 18, textDecorationLine: 'underline', fontWeight: '500' }
 });
