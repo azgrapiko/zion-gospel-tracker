@@ -129,7 +129,7 @@ export default function Sidebar({ navigation, state }) {
         {/* [ADMIN ONLY] 5. ATTENDANCE */}
         {isAdmin && (
           <MenuItem 
-            icon="calendar-check-outline" 
+            icon="calendar-check" 
             title="Attendance" 
             target="Attendance" 
             isActive={currentRoute === 'Attendance'}

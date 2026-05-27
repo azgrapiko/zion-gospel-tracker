@@ -15,6 +15,7 @@ import ZionControl from '../screens/ZionControl';
 import GospelScreen from '../screens/GospelScreen'; 
 import ProfileScreen from '../screens/Profile/ProfileScreen'; 
 import HelpFeedbackScreen from '../screens/HelpFeedbackScreen'; // VERIFIED IMPORT PATH
+import AttendanceScreen from '../screens/AttendanceScreen'; // IN-IMPORT ANG BAGONG ATTENDANCE FILE
 
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -141,7 +142,7 @@ export default function MainNavigator() {
       {isAdmin && (
         <Drawer.Screen 
           name="Attendance" 
-          component={DashboardScreen} // PAALALA: Pansamantalang nakaturo sa Dashboard habang ginagawa ang Attendance screen file
+          component={AttendanceScreen} // Selyado: Ikinonekta na sa tunay na Attendance core component file
           options={{ 
             title: 'ATTENDANCE TRACKER',
             drawerIcon: ({color}) => <MaterialCommunityIcons name="calendar-check" size={22} color={color} />

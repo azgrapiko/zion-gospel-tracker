@@ -33,6 +33,9 @@ export default function ProfileScreen() {
       const isAdmin = user.email.toLowerCase().endsWith('@zion.com');
 
       if (isAdmin) {
+        // ======================================================================
+        // ⭐ ORIGINAL ADMIN CODE: HINDI GINALAW KAHIT ISANG TULDOK DAHIL SUBOK NA GUMAGANA
+        // ======================================================================
         if (isWeb) {
           const newPass = window.prompt("Admin Security: Enter new password (min. 6 chars):");
           if (newPass && newPass.length >= 6) executePasswordUpdate(newPass);
@@ -54,18 +57,40 @@ export default function ProfileScreen() {
             "secure-text"
           );
         }
+        // ======================================================================
       } else {
-        setIsUpdating(true);
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(user.email, {
-          redirectTo: isWeb ? window.location.origin : 'safetrip://update-password',
-        });
-
-        if (resetError) throw resetError;
-
-        Alert.alert(
-          "Security Link Sent",
-          `Ang password reset link ay ipinadala sa ${user.email}. Pakisuri ang iyong inbox.`
-        );
+        // ======================================================================
+        // 🛠️ FIX FOR MEMBERS: Ginaya ang estratehiya ng Admin gamit ang direct updates 
+        // para lumabas agad ang Success Alert na nasa loob ng executePasswordUpdate
+        // ======================================================================
+        if (isWeb) {
+          const newPass = window.prompt("I-update ang Password: Maglagay ng bagong password (min. 6 chars):");
+          if (newPass && newPass.length >= 6) {
+            executePasswordUpdate(newPass); // Diretsong pasok sa execute block
+          } else if (newPass) {
+            alert("Masyadong maikli ang password. Tiyaking ito ay may 6 o higit pang karakter.");
+          }
+        } else {
+          Alert.prompt(
+            "I-update ang Password",
+            "Ipasok ang iyong bagong secure password (minimum na 6 na karakter):",
+            [
+              { text: "Kanselahin", style: "cancel" },
+              { 
+                text: "I-save Ngayon", 
+                onPress: (newPass) => {
+                  if (newPass.length < 6) {
+                    Alert.alert("System Security", "Masyadong maikli ang password.");
+                  } else {
+                    executePasswordUpdate(newPass); // Diretsong pasok sa execute block
+                  }
+                }
+              }
+            ],
+            "secure-text"
+          );
+        }
+        // ======================================================================
       }
     } catch (error) {
       console.error("Security Logic Error:", error.message);
@@ -75,6 +100,7 @@ export default function ProfileScreen() {
     }
   };
 
+  // WALANG GALAW DITO DAHIL DITO NAKALAGAY ANG IYONG "SUCCESS ALERT" POPUP NA GUMAGANA NA
   const executePasswordUpdate = async (newPassword) => {
     setIsUpdating(true);
     try {
