@@ -403,114 +403,141 @@ export default function AttendanceScreen() {
 
         {loading && <ActivityIndicator size="small" color="#26f7ff" style={{ marginVertical: 10 }} />}
 
-        {/* SPREADSHEET MATRIX TABLE */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-          <View style={styles.tableMatrixContainer}>
+        {/* SPREADSHEET MATRIX TABLE WITH FROZEN SIDEBAR */}
+        <View style={styles.tableMatrixContainer}>
+          
+          {/* 1. LEFT SIDEBAR COMPONENT (FROZEN PANEL) */}
+          <View style={styles.leftFixedSidebar}>
             
-            {/* MAIN SUPER HEADERS ROW */}
-            <View style={[styles.tableRow, styles.tableHeaderSuperRow]}>
+            {/* SUPER HEADERS LEFT CORNER */}
+            <View style={[styles.tableRow, styles.tableHeaderSuperRow, { borderRightWidth: 1, borderColor: '#444' }]}>
               <Text style={[styles.superHeaderCell, { width: 40 }]}>No.</Text>
-              <Text style={[styles.superHeaderCell, { width: 170 }]}>Name in Native Language</Text>
+              <Text style={[styles.superHeaderCell, { width: 170, textAlign: 'left', paddingLeft: 8 }]}>Name in Native Language</Text>
               <Text style={[styles.superHeaderCell, { width: 50 }]}>Age G.</Text>
               <Text style={[styles.superHeaderCell, { width: 40 }]}>Unit</Text>
-              
-              {/* HORIZONTAL WEEKS SECTIONS */}
-              {visibleWeeks.w1 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#202530', borderRightWidth: 1, borderColor: '#444' }]}>1st Week</Text>}
-              {visibleWeeks.w2 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#252a35', borderRightWidth: 1, borderColor: '#444' }]}>2nd Week</Text>}
-              {visibleWeeks.w3 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#202530', borderRightWidth: 1, borderColor: '#444' }]}>3rd Week</Text>}
-              {visibleWeeks.w4 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#252a35', borderRightWidth: 1, borderColor: '#444' }]}>4th Week</Text>}
-              {visibleWeeks.w5 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#202530', borderRightWidth: 1, borderColor: '#444' }]}>5th Week</Text>}
-
-              <Text style={[styles.superHeaderCell, { width: 45 }]}>Tithe</Text>
-              <Text style={[styles.superHeaderCell, { width: 50, color: '#26f7ff' }]}>Attend</Text>
-              <Text style={[styles.superHeaderCell, { width: 45 }]}>(-1M.)</Text>
-              <Text style={[styles.superHeaderCell, { width: 45 }]}>(-2M.)</Text>
-              <Text style={[styles.superHeaderCell, { width: 45 }]}>(-3M.)</Text>
-              <Text style={[styles.superHeaderCell, { width: 90 }]}>Modify</Text>
             </View>
 
-            {/* SERVICE SUB-CATEGORY TITLES ROW */}
-            <View style={[styles.tableRow, styles.tableHeaderSubRow]}>
-              <View style={{ width: 40 }} /><View style={{ width: 170 }} /><View style={{ width: 50 }} /><View style={{ width: 40 }} />
-              
-              {['w1', 'w2', 'w3', 'w4', 'w5'].map(wKey => visibleWeeks[wKey] && (
-                <View key={wKey} style={{ flexDirection: 'row', width: 140 }}>
-                  <Text style={styles.subHeaderServiceCell}>3rd</Text>
-                  <Text style={styles.subHeaderServiceCell}>Morn</Text>
-                  <Text style={styles.subHeaderServiceCell}>Aftn</Text>
-                  <Text style={styles.subHeaderServiceCell}>Eve</Text>
-                </View>
-              ))}
-
-              <View style={{ width: 45 }} /><View style={{ width: 50 }} /><View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 90 }} />
+            {/* SUB HEADERS LEFT CORNER */}
+            <View style={[styles.tableRow, styles.tableHeaderSubRow, { borderRightWidth: 1, borderColor: '#383f50' }]}>
+              <View style={{ width: 40 }} />
+              <View style={{ width: 170 }} />
+              <View style={{ width: 50 }} />
+              <View style={{ width: 40 }} />
             </View>
 
-            {/* FILTERS INPUT FIELD ROW */}
-            <View style={[styles.tableRow, { backgroundColor: '#13151a' }]}>
+            {/* FILTERS INPUT ROW LEFT CORNER */}
+            <View style={[styles.tableRow, { backgroundColor: '#13151a', borderRightWidth: 1, borderColor: '#333', height: 28, alignItems: 'center' }]}>
               <View style={{ width: 40 }} />
               <TextInput style={[styles.filterInputCell, { width: 170 }]} placeholder="🔍 Name..." placeholderTextColor="#555" value={filterName} onChangeText={setFilterName} />
               <TextInput style={[styles.filterInputCell, { width: 50 }]} placeholder="Group" placeholderTextColor="#555" value={filterAgeGroup} onChangeText={setFilterAgeGroup} />
               <TextInput style={[styles.filterInputCell, { width: 40 }]} placeholder="Unit" placeholderTextColor="#555" value={filterUnit} onChangeText={setFilterUnit} />
-              
-              {['w1', 'w2', 'w3', 'w4', 'w5'].map(w => visibleWeeks[w] && <View key={w} style={{ width: 140 }} />)}
-
-              <TouchableOpacity style={[styles.filterInputCell, { width: 45, justifyContent: 'center' }]} onPress={() => setFilterTithe(!filterTithe)}>
-                <Text style={{ fontSize: 9, color: filterTithe ? '#2ecc71' : '#555', textAlign:'center', fontWeight:'bold' }}>{filterTithe ? "✅" : "ALL"}</Text>
-              </TouchableOpacity>
-              <TextInput style={[styles.filterInputCell, { width: 50 }]} placeholder="Num" placeholderTextColor="#555" value={filterTotalAttend} onChangeText={setFilterTotalAttend} />
-              <View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 90 }} />
             </View>
 
-            {/* CONDENSED SPREADSHEET MEMBERS ITERATION */}
+            {/* MEMBER NAMES ROWS (FROZEN LIST) */}
             {filteredMembers.map((member, index) => {
               const mId = member.id;
-              const liveTotal = calculateMemberTotalRow(mId);
-              const past = historyTotals[mId] || { m1: 0, m2: 0, m3: 0 };
               const statusBorderColor = determineBorderColor(mId);
-
               return (
-                <View key={mId} style={[styles.spreadsheetRow, { borderColor: statusBorderColor, opacity: isInputModeActive ? 1 : 0.88 }]}>
-                  {/* Roster Metadata Info */}
+                <View key={`fixed-${mId}`} style={[styles.spreadsheetRow, { borderColor: statusBorderColor, opacity: isInputModeActive ? 1 : 0.88, width: 300 }]}>
                   <Text style={[styles.bodyGridCell, { width: 40, color: '#888', textAlign: 'center' }]}>{index + 1}</Text>
                   <Text style={[styles.bodyGridCell, { width: 170, color: '#ffffff', textAlign: 'left', fontWeight: '700' }]} numberOfLines={1}>{member.full_name}</Text>
                   <Text style={[styles.bodyGridCell, { width: 50, color: '#f1c40f', textAlign: 'center', fontWeight: '600' }]}>{member.age_group}</Text>
                   <Text style={[styles.bodyGridCell, { width: 40, color: '#ffffff', textAlign: 'center' }]}>{member.unit}</Text>
-
-                  {/* SPREADSHEET MATRIX HORIZONTAL BLOCKS MAP */}
-                  {['w1', 'w2', 'w3', 'w4', 'w5'].map(wKey => visibleWeeks[wKey] && (
-                    <View key={wKey} style={styles.horizontalWeekGroupBlock}>
-                      {renderWeekCells(mId, '3rd_day', wKey)}
-                      {renderWeekCells(mId, 'sabbath_morning', wKey)}
-                      {renderWeekCells(mId, 'sabbath_afternoon', wKey)}
-                      {renderWeekCells(mId, 'sabbath_evening', wKey)}
-                    </View>
-                  ))}
-
-                  {/* TITHE INTERACTIVE BOX */}
-                  <TouchableOpacity style={[styles.gridCellInteractive, { width: 45 }]} onPress={() => toggleTitheCell(mId)}>
-                    <Text style={{ fontSize: 12, textAlign: 'center' }}>{titheData[mId] ? "🟩" : "▪️"}</Text>
-                  </TouchableOpacity>
-
-                  {/* COMPUTED SUM MARGINS */}
-                  <Text style={[styles.bodyGridCell, { width: 50, color: '#26f7ff', fontWeight: 'bold', textAlign: 'center' }]}>{liveTotal}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 45, color: '#777', textAlign: 'center' }]}>{past.m1}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 45, color: '#777', textAlign: 'center' }]}>{past.m2}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 45, color: '#777', textAlign: 'center' }]}>{past.m3}</Text>
-
-                  {/* MANAGEMENT CONTROL ACTIONS BUTTONS */}
-                  <View style={{ width: 90, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => { setEditingMemberId(mId); setFormFullName(member.full_name); setFormAgeGroup(member.age_group); setFormUnit(member.unit.toString()); setShowAddForm(true); }}>
-                      <Text style={{ color: '#3498db', fontSize: 10, fontWeight: 'bold' }}>EDIT</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDeleteMember(mId)}>
-                      <Text style={{ color: '#e74c3c', fontSize: 10, fontWeight: 'bold' }}>DEL</Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
               );
             })}
           </View>
-        </ScrollView>
+
+          {/* 2. RIGHT SCROLLABLE CANVAS COMPONENT */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.rightScrollableCanvas}>
+            <View style={{ flexDirection: 'column' }}>
+              
+              {/* SUPER HEADERS DYNAMIC WEEK COLUMNS */}
+              <View style={[styles.tableRow, styles.tableHeaderSuperRow]}>
+                {visibleWeeks.w1 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#202530', borderRightWidth: 1, borderColor: '#444' }]}>1st Week</Text>}
+                {visibleWeeks.w2 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#252a35', borderRightWidth: 1, borderColor: '#444' }]}>2nd Week</Text>}
+                {visibleWeeks.w3 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#202530', borderRightWidth: 1, borderColor: '#444' }]}>3rd Week</Text>}
+                {visibleWeeks.w4 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#252a35', borderRightWidth: 1, borderColor: '#444' }]}>4th Week</Text>}
+                {visibleWeeks.w5 && <Text style={[styles.superHeaderCell, { width: 140, backgroundColor: '#202530', borderRightWidth: 1, borderColor: '#444' }]}>5th Week</Text>}
+
+                <Text style={[styles.superHeaderCell, { width: 45 }]}>Tithe</Text>
+                <Text style={[styles.superHeaderCell, { width: 50, color: '#26f7ff' }]}>Attend</Text>
+                <Text style={[styles.superHeaderCell, { width: 45 }]}>(-1M.)</Text>
+                <Text style={[styles.superHeaderCell, { width: 45 }]}>(-2M.)</Text>
+                <Text style={[styles.superHeaderCell, { width: 45 }]}>(-3M.)</Text>
+                <Text style={[styles.superHeaderCell, { width: 90 }]}>Modify</Text>
+              </View>
+
+              {/* SUB HEADERS SERVICE TYPES COLUMNS */}
+              <View style={[styles.tableRow, styles.tableHeaderSubRow]}>
+                {['w1', 'w2', 'w3', 'w4', 'w5'].map(wKey => visibleWeeks[wKey] && (
+                  <View key={`sub-${wKey}`} style={{ flexDirection: 'row', width: 140 }}>
+                    <Text style={styles.subHeaderServiceCell}>3rd</Text>
+                    <Text style={styles.subHeaderServiceCell}>Morn</Text>
+                    <Text style={styles.subHeaderServiceCell}>Aftn</Text>
+                    <Text style={styles.subHeaderServiceCell}>Eve</Text>
+                  </View>
+                ))}
+                <View style={{ width: 45 }} /><View style={{ width: 50 }} /><View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 90 }} />
+              </View>
+
+              {/* FILTERS RIGHT CANVAS ELEMENT */}
+              <View style={[styles.tableRow, { backgroundColor: '#13151a', height: 28, alignItems: 'center' }]}>
+                {['w1', 'w2', 'w3', 'w4', 'w5'].map(w => visibleWeeks[w] && <View key={`fil-${w}`} style={{ width: 140 }} />)}
+
+                <TouchableOpacity style={[styles.filterInputCell, { width: 45, justifyContent: 'center' }]} onPress={() => setFilterTithe(!filterTithe)}>
+                  <Text style={{ fontSize: 9, color: filterTithe ? '#2ecc71' : '#555', textAlign: 'center', fontWeight: 'bold' }}>{filterTithe ? "✅" : "ALL"}</Text>
+                </TouchableOpacity>
+                <TextInput style={[styles.filterInputCell, { width: 50 }]} placeholder="Num" placeholderTextColor="#555" value={filterTotalAttend} onChangeText={setFilterTotalAttend} />
+                <View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 45 }} /><View style={{ width: 90 }} />
+              </View>
+
+              {/* METRICS CELLS DATA ITERATION */}
+              {filteredMembers.map((member) => {
+                const mId = member.id;
+                const liveTotal = calculateMemberTotalRow(mId);
+                const past = historyTotals[mId] || { m1: 0, m2: 0, m3: 0 };
+
+                return (
+                  <View key={`data-${mId}`} style={[styles.spreadsheetRow, { borderLeftWidth: 0, opacity: isInputModeActive ? 1 : 0.88 }]}>
+                    {/* SPREADSHEET MATRIX HORIZONTAL BLOCKS MAP */}
+                    {['w1', 'w2', 'w3', 'w4', 'w5'].map(wKey => visibleWeeks[wKey] && (
+                      <View key={`grid-${mId}-${wKey}`} style={styles.horizontalWeekGroupBlock}>
+                        {renderWeekCells(mId, '3rd_day', wKey)}
+                        {renderWeekCells(mId, 'sabbath_morning', wKey)}
+                        {renderWeekCells(mId, 'sabbath_afternoon', wKey)}
+                        {renderWeekCells(mId, 'sabbath_evening', wKey)}
+                      </View>
+                    ))}
+
+                    {/* TITHE INTERACTIVE BOX */}
+                    <TouchableOpacity style={[styles.gridCellInteractive, { width: 45 }]} onPress={() => toggleTitheCell(mId)}>
+                      <Text style={{ fontSize: 12, textAlign: 'center' }}>{titheData[mId] ? "🟩" : "▪️"}</Text>
+                    </TouchableOpacity>
+
+                    {/* COMPUTED SUM MARGINS */}
+                    <Text style={[styles.bodyGridCell, { width: 50, color: '#26f7ff', fontWeight: 'bold', textAlign: 'center' }]}>{liveTotal}</Text>
+                    <Text style={[styles.bodyGridCell, { width: 45, color: '#777', textAlign: 'center' }]}>{past.m1}</Text>
+                    <Text style={[styles.bodyGridCell, { width: 45, color: '#777', textAlign: 'center' }]}>{past.m2}</Text>
+                    <Text style={[styles.bodyGridCell, { width: 45, color: '#777', textAlign: 'center' }]}>{past.m3}</Text>
+
+                    {/* MANAGEMENT CONTROL ACTIONS BUTTONS */}
+                    <View style={{ width: 90, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                      <TouchableOpacity onPress={() => { setEditingMemberId(mId); setFormFullName(member.full_name); setFormAgeGroup(member.age_group); setFormUnit(member.unit.toString()); setShowAddForm(true); }}>
+                        <Text style={{ color: '#3498db', fontSize: 10, fontWeight: 'bold' }}>EDIT</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteMember(mId)}>
+                        <Text style={{ color: '#e74c3c', fontSize: 10, fontWeight: 'bold' }}>DEL</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+            </View>
+          </ScrollView>
+
+        </View>
       </ScrollView>
     </View>
   );
@@ -538,7 +565,11 @@ const styles = StyleSheet.create({
   pickerBlackText: { color: '#000000', fontSize: 12, fontWeight: '700', backgroundColor: '#ffffff' },
   btnSubmitMember: { backgroundColor: '#1e3a8a', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 4 },
 
-  tableMatrixContainer: { flexDirection: 'column', backgroundColor: '#0f1115', borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#222' },
+  // STRUCTURAL GRID LAYOUT PATTERNS (FREEZE SIDEBAR ARCHITECTURE)
+  tableMatrixContainer: { flexDirection: 'row', backgroundColor: '#0f1115', borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#222' },
+  leftFixedSidebar: { flexDirection: 'column', width: 300, zIndex: 10, backgroundColor: '#0f1115' },
+  rightScrollableCanvas: { flex: 1, backgroundColor: '#0f1115' },
+  
   tableRow: { flexDirection: 'row', alignItems: 'center' },
   
   tableHeaderSuperRow: { backgroundColor: '#1a1f2c', borderBottomWidth: 1, borderColor: '#444', height: 32 },

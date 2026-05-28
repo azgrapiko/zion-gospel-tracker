@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import useAuthStore from '../../store/authStore'; 
 import { supabase } from '../../utils/supabase';   
@@ -16,15 +16,23 @@ const COLORS = {
   silver: '#e1e4ed'         // High-contrast label gray
 };
 
-// 🎯 KORREKTED AGE GROUPS FILTER (Tugma sa database short codes sa 1000088295.png)
-// Bukod kay 'Male Elderly' at 'Female Elderly', isinama ang MA, FA, MW, MU, MS, at FS.
-// Hindi kasama rito ang 'Elem' at 'Child'.
 const VALID_AGE_GROUPS = [
   'Male Elderly', 'Female Elderly',
-  'MA', 'FA', // Male Adult, Female Adult
-  'MW', 'MU', // Young Adult / Workers short mappings
-  'MS', 'FS'  // Mid Sch, High Sch, o Youth sub-designations
+  'MA', 'FA', 
+  'MW', 'MU', 'MY',
+  'FW', 'FU', 'FY',
+  'Male High Sch', 'Male Mid Sch', 'MS',
+  'Female High Sch', 'Female Mid Sch', 'FS'
 ];
+
+// DETERMINISTIC ALERTS SORTING ORDER HIERARCHY
+const AGE_SORT_ORDER = {
+  'Male Elderly': 1, 'Female Elderly': 2,
+  'MA': 3, 'FA': 4,
+  'MW': 5, 'MU': 6, 'MY': 7, 'FW': 8, 'FU': 9, 'FY': 10,
+  'Male High Sch': 11, 'Male Mid Sch': 12, 'MS': 13,
+  'Female High Sch': 14, 'Female Mid Sch': 15, 'FS': 16
+};
 
 export default function AttendanceCard() {
   const { userProfile } = useAuthStore();
@@ -32,10 +40,41 @@ export default function AttendanceCard() {
   // LIVE ATTENDANCE STATES
   const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [attendanceMetrics, setAttendanceMetrics] = useState({ count1X: 0, count4X: 0, totalTithes: 0 });
+  const [groupBreakdown, setGroupBreakdown] = useState({ ma: 0, fa: 0, fy: 0, my: 0, ms: 0, fs: 0 });
   const [noAttendanceAlerts, setNoAttendanceAlerts] = useState([]);
   const [isAlertActive, setIsAlertActive] = useState(false);
 
-  // REALTIME ENGINE WITH SHORT CODE TENANT ISOLATION
+  // 💓 HEARTBEAT INDICATOR ANIMATION REF
+  const heartbeatAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.08,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.05,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.0,
+          duration: 1200,
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [heartbeatAnim]);
+
+  // REALTIME ENGINE WITH INCLUSIVE HEADCOUNT AGGREGATIONS
   const calculateLiveAttendanceMetrics = async () => {
     if (!userProfile?.zion_code) return;
     try {
@@ -43,7 +82,6 @@ export default function AttendanceCard() {
       const currentMonthNum = new Date().getMonth() + 1;
       const currentDay = new Date().getDate();
 
-      // Alert active paglagpas ng 1st Week (Day 7 pataas)
       if (currentDay > 7) {
         setIsAlertActive(true);
       } else {
@@ -57,7 +95,7 @@ export default function AttendanceCard() {
         .eq('zion_code', userProfile.zion_code);
       if (mErr) throw mErr;
 
-      // 2. Kuhanin ang active weekly logs para sa kasalukuyang buwan at taon
+      // 2. Kuhanin ang active logs para sa kasalukuyang buwan
       const { data: logs, error: lErr } = await supabase
         .from('attendance_logs')
         .select('*')
@@ -66,7 +104,7 @@ export default function AttendanceCard() {
         .eq('month', currentMonthNum);
       if (lErr) throw lErr;
 
-      // 3. Kuhanin ang active tithe payment records para sa kasalukuyang buwan
+      // 3. Kuhanin ang active tithe records para sa kasalukuyang buwan
       const { data: tithes, error: tErr } = await supabase
         .from('attendance_tithes')
         .select('member_id, has_paid')
@@ -76,7 +114,6 @@ export default function AttendanceCard() {
         .eq('has_paid', true);
       if (tErr) throw tErr;
 
-      // Map para sa mabilis na pag-track ng attendance logs count
       let memberSessionsMap = {};
       if (members) {
         members.forEach(m => { memberSessionsMap[m.id] = 0; });
@@ -91,7 +128,6 @@ export default function AttendanceCard() {
         });
       }
 
-      // Filtered Tithes base sa standardized short groups natin
       let validTithesCount = 0;
       if (tithes && members) {
         const activeTitheMemberIds = tithes.map(t => t.member_id);
@@ -105,32 +141,62 @@ export default function AttendanceCard() {
       let count4X = 0;
       let zeroAttendanceList = [];
 
+      // HEADCOUNT COUNTERS (1 O HIGIT PANG ATTENDANCE = PLUS 1 SA GROUP)
+      let maGroup = 0, faGroup = 0, fyGroup = 0, myGroup = 0, msGroup = 0, fsGroup = 0;
+
       if (members) {
         members.forEach(m => {
-          // CHECKPOINT MATCHING: Dapat pasok sa short-code criteria, iwasan ang Elem/Child
           if (!VALID_AGE_GROUPS.includes(m.age_group)) return;
 
           const totalSessions = memberSessionsMap[m.id];
-          if (totalSessions >= 1 && totalSessions <= 3) {
-            count1X++;
-          } else if (totalSessions >= 4) {
-            count4X++;
-          } else if (totalSessions === 0) {
+          const hasAttendedOnceOrMore = totalSessions >= 1;
+          
+          if (hasAttendedOnceOrMore) {
+            count1X++; 
+          }
+          if (totalSessions >= 4) {
+            count4X++; 
+          }
+
+          if (totalSessions === 0) {
             const firstName = m.full_name.split(' ')[0];
             zeroAttendanceList.push({ name: firstName, ageGroup: m.age_group });
           }
+
+          // 🎯 EXACT MODULAR BOUNDARY AGGREGATION CORES (Laging magkabukod ang M at F)
+          if (hasAttendedOnceOrMore) {
+            const group = m.age_group;
+            
+            if (group === 'MA' || group === 'Male Elderly') {
+              maGroup++;
+            } else if (group === 'FA' || group === 'Female Elderly') {
+              faGroup++;
+            } else if (group === 'FY' || group === 'FW' || group === 'FU') {
+              fyGroup++; // Female Youth / Female University / Female Worker
+            } else if (group === 'MY' || group === 'MW' || group === 'MU') {
+              myGroup++; // Male Youth / Male Worker / Male University
+            } else if (group === 'Male High Sch' || group === 'Male Mid Sch' || group === 'MS') {
+              msGroup++; // Male Secondary Sub-pools
+            } else if (group === 'Female High Sch' || group === 'Female Mid Sch' || group === 'FS') {
+              fsGroup++; // Female Secondary Sub-pools
+            }
+          }
+        });
+
+        // SORTING SYSTEM FOR ALERTS BOX
+        zeroAttendanceList.sort((a, b) => {
+          const orderA = AGE_SORT_ORDER[a.ageGroup] || 99;
+          const orderB = AGE_SORT_ORDER[b.ageGroup] || 99;
+          return orderA - orderB;
         });
       }
 
-      setAttendanceMetrics({
-        count1X,
-        count4X,
-        totalTithes: validTithesCount
-      });
+      setAttendanceMetrics({ count1X, count4X, totalTithes: validTithesCount });
+      setGroupBreakdown({ ma: maGroup, fa: faGroup, fy: fyGroup, my: myGroup, ms: msGroup, fs: fsGroup });
       setNoAttendanceAlerts(zeroAttendanceList);
 
     } catch (err) {
-      console.error("❌ ATTENDANCE_CARD: Mapping evaluation error:", err.message);
+      console.error("❌ ATTENDANCE_CARD: Error analyzing demographic headcounts:", err.message);
     } finally {
       setAttendanceLoading(false);
     }
@@ -147,52 +213,64 @@ export default function AttendanceCard() {
       {/* CARD HEADER */}
       <View style={styles.header}>
         <MaterialCommunityIcons name="calendar-clock" size={20} color={COLORS.primary} />
-        <Text style={styles.title}>Live Attendance Update</Text>
+        <Text style={styles.title}>Attendance Update on 4th Week</Text>
       </View>
 
-      {/* SIDE-BY-SIDE SPLIT LAYOUT */}
+      {/* SPLIT LAYOUT CONTAINER */}
       <View style={styles.sectionSplitWrapper}>
         
-        {/* PAHANGAL MATRIX CORES REPORT */}
+        {/* LEFT COMPONENT: ANALYTICS FRAMEWORK */}
         <View style={styles.matrixContainer}>
-          <Text style={styles.innerSectionHeading}>📊 RECORD MATRIX</Text>
           {attendanceLoading ? (
-            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 30 }} />
+            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 35 }} />
           ) : (
-            <View style={styles.horizontalMetricsGrid}>
+            <View style={{ flex: 1, justifyContent: 'space-between' }}>
               
-              <View style={styles.horizontalMetricBox}>
-                <Text style={[styles.bigMetricNumber, { color: COLORS.warning }]}>
-                  {attendanceMetrics.count1X}
-                </Text>
-                <Text style={styles.metricLabelLegend}>1 Time Attendance</Text>
+              {/* TOTAL NUMBERS GRID (HEARTBEAT SCALE EFFECT) */}
+              <View style={styles.horizontalMetricsGrid}>
+                
+                <View style={styles.horizontalMetricBox}>
+                  <Animated.Text style={[styles.bigMetricNumber, { color: COLORS.warning, transform: [{ scale: heartbeatAnim }] }]}>
+                    {attendanceMetrics.count1X}
+                  </Animated.Text>
+                  <Text style={styles.metricLabelLegend}>1 Time Attendance</Text>
+                </View>
+
+                <View style={styles.horizontalMetricBox}>
+                  <Animated.Text style={[styles.bigMetricNumber, { color: COLORS.primary, transform: [{ scale: heartbeatAnim }] }]}>
+                    {attendanceMetrics.count4X}
+                  </Animated.Text>
+                  <Text style={styles.metricLabelLegend}>4 Times Attendance</Text>
+                </View>
+
+                <View style={[styles.horizontalMetricBox, { borderRightWidth: 0 }]}>
+                  <Animated.Text style={[styles.bigMetricNumber, { color: COLORS.success, transform: [{ scale: heartbeatAnim }] }]}>
+                    {attendanceMetrics.totalTithes}
+                  </Animated.Text>
+                  <Text style={styles.metricLabelLegend}>Tithes Participants</Text>
+                </View>
+
               </View>
 
-              <View style={styles.horizontalMetricBox}>
-                <Text style={[styles.bigMetricNumber, { color: COLORS.primary }]}>
-                  {attendanceMetrics.count4X}
+              {/* GROUP STATUS SEGMENT (KALIWANG GILID ANG TITLE) */}
+              <View style={styles.groupBreakdownBadgeLine}>
+                <Text style={styles.groupStatusLabel}>GROUP STATUS: </Text>
+                <Text style={styles.badgeLineText}>
+                  MA ({groupBreakdown.ma}) • FA ({groupBreakdown.fa}) • FY ({groupBreakdown.fy}) • MY ({groupBreakdown.my}) • MS ({groupBreakdown.ms}) • FS ({groupBreakdown.fs})
                 </Text>
-                <Text style={styles.metricLabelLegend}>4 Times Attendance</Text>
-              </View>
-
-              <View style={[styles.horizontalMetricBox, { borderRightWidth: 0 }]}>
-                <Text style={[styles.bigMetricNumber, { color: COLORS.success }]}>
-                  {attendanceMetrics.totalTithes}
-                </Text>
-                <Text style={styles.metricLabelLegend}>Tithes Participants</Text>
               </View>
 
             </View>
           )}
         </View>
 
-        {/* CONDITIONAL REALTIME WARNING BOX (KANAN) */}
+        {/* RIGHT COMPONENT: NO ATTENDANCE ALERTS LIST */}
         <View style={[styles.alertContainer, !isAlertActive && { opacity: 0.5 }]}>
           <Text style={styles.alertCardHeadingText}>⚠️ NO ATTENDANCE</Text>
           {isAlertActive ? (
             <ScrollView style={styles.alertNamesContainerScroll} showsVerticalScrollIndicator={true}>
               {noAttendanceAlerts.length === 0 ? (
-                <Text style={styles.allPresentCleanText}>All registered members have logged records.</Text>
+                <Text style={styles.allPresentCleanText}>All profiles active.</Text>
               ) : (
                 noAttendanceAlerts.map((member, mIdx) => (
                   <Text key={mIdx} style={styles.alertMemberNameRowText}>
@@ -202,13 +280,12 @@ export default function AttendanceCard() {
               )}
             </ScrollView>
           ) : (
-            <Text style={styles.waitingWeekText}>Monitoring window unlocks after the 1st week.</Text>
+            <Text style={styles.waitingWeekText}>Monitoring window locked.</Text>
           )}
         </View>
 
       </View>
       
-      {/* SOLID ACCENT RIBBON */}
       <View style={styles.footerLine} />
     </View>
   );
@@ -227,7 +304,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   title: {
     color: COLORS.text,
@@ -249,19 +326,13 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#2d3139',
-  },
-  innerSectionHeading: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: '900',
-    marginBottom: 15,
-    letterSpacing: 0.5,
+    justifyContent: 'space-between',
   },
   horizontalMetricsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 5,
+    paddingTop: 5,
   },
   horizontalMetricBox: {
     flex: 1,
@@ -269,20 +340,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRightWidth: 1,
     borderRightColor: '#232329',
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   bigMetricNumber: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '900',
     letterSpacing: -0.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   metricLabelLegend: {
     color: COLORS.subtext,
     fontSize: 9,
     fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 11,
+  },
+  groupBreakdownBadgeLine: {
+    borderTopWidth: 1,
+    borderTopColor: '#232329',
+    paddingTop: 8,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  groupStatusLabel: {
+    color: COLORS.subtext,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  badgeLineText: {
+    color: COLORS.primary,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   alertContainer: {
     width: '41%',
@@ -300,7 +392,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   alertNamesContainerScroll: {
-    maxHeight: 90,
+    maxHeight: 105,
   },
   allPresentCleanText: {
     color: '#888',
@@ -312,7 +404,7 @@ const styles = StyleSheet.create({
     color: '#ffb3b3',
     fontSize: 11,
     fontWeight: '700',
-    marginVertical: 2,
+    marginVertical: 2.5,
     letterSpacing: 0.3,
   },
   waitingWeekText: {
@@ -320,7 +412,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: 15,
+    marginTop: 25,
   },
   footerLine: {
     height: 2,
