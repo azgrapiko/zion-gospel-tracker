@@ -345,6 +345,7 @@ export default function AttendanceScreen() {
               </Picker>
             </View>
 
+            {/* TINAMAAN DITO: Idinagdag ang kulang na styles. prefix */}
             <View style={styles.weekCheckboxContainer}>
               {['w1', 'w2', 'w3', 'w4', 'w5'].map((wKey, index) => (
                 <TouchableOpacity key={wKey} style={[styles.weekToggleChip, visibleWeeks[wKey] && styles.weekToggleChipActive]} onPress={() => setVisibleWeeks(p => ({ ...p, [wKey]: !p[wKey] }))}>
@@ -406,29 +407,29 @@ export default function AttendanceScreen() {
         {/* SPREADSHEET MATRIX TABLE WITH FROZEN SIDEBAR */}
         <View style={styles.tableMatrixContainer}>
           
-          {/* 1. LEFT SIDEBAR COMPONENT (FROZEN PANEL) */}
+          {/* 1. LEFT SIDEBAR COMPONENT (FROZEN PANEL - COMPRESSED WEIGHTS) */}
           <View style={styles.leftFixedSidebar}>
             
             {/* SUPER HEADERS LEFT CORNER */}
             <View style={[styles.tableRow, styles.tableHeaderSuperRow, { borderRightWidth: 1, borderColor: '#444' }]}>
-              <Text style={[styles.superHeaderCell, { width: 40 }]}>No.</Text>
-              <Text style={[styles.superHeaderCell, { width: 110, textAlign: 'left', paddingLeft: 8 }]}>Name in Native Language</Text>
+              <Text style={[styles.superHeaderCell, { width: 30 }]}>No.</Text>
+              <Text style={[styles.superHeaderCell, { width: 105, textAlign: 'left', paddingLeft: 6 }]}>Name in Native Language</Text>
               <Text style={[styles.superHeaderCell, { width: 45 }]}>Age G.</Text>
               <Text style={[styles.superHeaderCell, { width: 35 }]}>Unit</Text>
             </View>
 
             {/* SUB HEADERS LEFT CORNER */}
             <View style={[styles.tableRow, styles.tableHeaderSubRow, { borderRightWidth: 1, borderColor: '#383f50' }]}>
-              <View style={{ width: 40 }} />
-              <View style={{ width: 110 }} />
+              <View style={{ width: 30 }} />
+              <View style={{ width: 105 }} />
               <View style={{ width: 45 }} />
               <View style={{ width: 35 }} />
             </View>
 
             {/* FILTERS INPUT ROW LEFT CORNER */}
             <View style={[styles.tableRow, { backgroundColor: '#13151a', borderRightWidth: 1, borderColor: '#333', height: 28, alignItems: 'center' }]}>
-              <View style={{ width: 40 }} />
-              <TextInput style={[styles.filterInputCell, { width: 110 }]} placeholder="🔍 Name..." placeholderTextColor="#555" value={filterName} onChangeText={setFilterName} />
+              <View style={{ width: 30 }} />
+              <TextInput style={[styles.filterInputCell, { width: 105 }]} placeholder="🔍 Name..." placeholderTextColor="#555" value={filterName} onChangeText={setFilterName} />
               <TextInput style={[styles.filterInputCell, { width: 45 }]} placeholder="Group" placeholderTextColor="#555" value={filterAgeGroup} onChangeText={setFilterAgeGroup} />
               <TextInput style={[styles.filterInputCell, { width: 35 }]} placeholder="Unit" placeholderTextColor="#555" value={filterUnit} onChangeText={setFilterUnit} />
             </View>
@@ -438,9 +439,9 @@ export default function AttendanceScreen() {
               const mId = member.id;
               const statusBorderColor = determineBorderColor(mId);
               return (
-                <View key={`fixed-${mId}`} style={[styles.spreadsheetRow, { borderColor: statusBorderColor, opacity: isInputModeActive ? 1 : 0.88, width: 230 }]}>
-                  <Text style={[styles.bodyGridCell, { width: 40, color: '#888', textAlign: 'center' }]}>{index + 1}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 110, color: '#ffffff', textAlign: 'left', fontWeight: '700' }]} numberOfLines={1}>{member.full_name}</Text>
+                <View key={`fixed-${mId}`} style={[styles.spreadsheetRow, { borderColor: statusBorderColor, opacity: isInputModeActive ? 1 : 0.88, width: 215 }]}>
+                  <Text style={[styles.bodyGridCell, { width: 30, color: '#888', textAlign: 'center' }]}>{index + 1}</Text>
+                  <Text style={[styles.bodyGridCell, { width: 105, color: '#ffffff', textAlign: 'left', fontWeight: '700' }]} numberOfLines={1}>{member.full_name}</Text>
                   <Text style={[styles.bodyGridCell, { width: 45, color: '#f1c40f', textAlign: 'center', fontWeight: '600' }]}>{member.age_group}</Text>
                   <Text style={[styles.bodyGridCell, { width: 35, color: '#ffffff', textAlign: 'center' }]}>{member.unit}</Text>
                 </View>
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
   topControlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 10 },
   topLeftSelectors: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   miniPicker: { backgroundColor: '#161b22', borderRadius: 4, borderWidth: 1, borderColor: '#30363d', width: 140, height: 34, justifyContent: 'center' },
-  nativePickerElement: { color: '#0a5254', fontSize: 12, background: 'transparent', border: 'none', paddingLeft: 4 },
+  nativePickerElement: { color: '#000000', fontSize: 12, paddingLeft: 4 }, // Nilinis ang bad styles properties
   weekCheckboxContainer: { flexDirection: 'row', gap: 4 },
   weekToggleChip: { backgroundColor: '#161b22', paddingHorizontal: 6, paddingVertical: 6, borderRadius: 4, borderWidth: 1, borderColor: '#30363d' },
   weekToggleChipActive: { borderColor: '#26f7ff', backgroundColor: '#1e293b' },
@@ -565,9 +566,9 @@ const styles = StyleSheet.create({
   pickerBlackText: { color: '#000000', fontSize: 12, fontWeight: '700', backgroundColor: '#ffffff' },
   btnSubmitMember: { backgroundColor: '#1e3a8a', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 4 },
 
-  // STRUCTURAL GRID LAYOUT PATTERNS (FREEZE SIDEBAR ARCHITECTURE) - NA-ADJUST PARA SA MOBILE LAYOUT LARO
+  // STRUCTURAL GRID LAYOUT PATTERNS (FREEZE SIDEBAR ARCHITECTURE) - PERFECT COMPRESSION MATCH
   tableMatrixContainer: { flexDirection: 'row', backgroundColor: '#0f1115', borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#222' },
-  leftFixedSidebar: { flexDirection: 'column', width: 230, zIndex: 10, backgroundColor: '#0f1115' },
+  leftFixedSidebar: { flexDirection: 'column', width: 215, zIndex: 10, backgroundColor: '#0f1115' },
   rightScrollableCanvas: { flex: 1, backgroundColor: '#0f1115' },
   
   tableRow: { flexDirection: 'row', alignItems: 'center' },
