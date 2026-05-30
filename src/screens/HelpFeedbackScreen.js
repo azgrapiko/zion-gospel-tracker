@@ -122,8 +122,8 @@ export default function HelpFeedbackScreen({ navigation }) {
                 <MaterialCommunityIcons name="xml" size={26} color="#2ecc71" />
                 <Text style={[styles.cardMainLabel, { color: '#2ecc71' }]}>SYSTEM ARCHITECTURE</Text>
               </View>
-              <Text style={styles.devText}>Engineered by: <Text style={{ color: '#fff' }}>Gem-tech Alpha</Text></Text>
-              <Text style={styles.devText}>Current Build: <Text style={{ color: '#26f7ff' }}>v2.0 (High Contrast Edition)</Text></Text>
+              <Text style={styles.devText}>Engineered by: <Text style={{ color: '#fff' }}>Gem-tech Alpha (EdMor)</Text></Text>
+              <Text style={styles.devText}>Current Build: <Text style={{ color: '#ffffff' }}>v2.0 (High Contrast Edition)</Text></Text>
               <Text style={styles.devText}>Core Stack: <Text style={{ color: '#fff' }}>React Native & Supabase Isolation</Text></Text>
             </View>
 

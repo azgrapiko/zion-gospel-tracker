@@ -62,6 +62,17 @@ export default function OnlineMission() {
     }
   };
 
+  // NEW PIPELINE: Delete handler mechanism to purge item from AsyncStorage
+  const deleteLog = async (id) => {
+    try {
+      const filtered = logs.filter(l => l.id !== id);
+      await AsyncStorage.setItem('@zion_online_logs', JSON.stringify(filtered));
+      setLogs(filtered);
+    } catch (e) {
+      console.error("Delete Error:", e);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.headerTitle}>ONLINE MISSION</Text>
@@ -146,9 +157,10 @@ export default function OnlineMission() {
                 <Text style={[styles.rCell, { color: item.mark === 'COMPLETED' ? '#2ecc71' : '#f1c40f', fontWeight: '900' }]}>
                   {item.mark}
                 </Text>
+                {/* 🗑️ UPDATED PIPELINE: Changed pencil to interactive DELETE trash icon */}
                 <View style={{ width: 40, alignItems: 'flex-end' }}>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="pencil" size={18} color="#2ecc71" />
+                  <TouchableOpacity onPress={() => deleteLog(item.id)}>
+                    <MaterialCommunityIcons name="delete-outline" size={18} color="#ff4d4d" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -200,7 +212,7 @@ const styles = StyleSheet.create({
   logsContainer: { marginTop: 10, paddingBottom: 40 },
   logTitle: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 12, letterSpacing: 0.5 },
   tableHeader: { flexDirection: 'row', backgroundColor: '#18181c', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' },
-  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // Shifted to higher visibility contrast
+  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, 
   listWrapper: { maxHeight: 200 }, 
   tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
   rCell: { color: '#ffffff', fontSize: 10, flex: 1, fontWeight: '500' }

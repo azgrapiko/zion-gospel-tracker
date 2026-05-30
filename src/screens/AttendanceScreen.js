@@ -412,25 +412,25 @@ export default function AttendanceScreen() {
             {/* SUPER HEADERS LEFT CORNER */}
             <View style={[styles.tableRow, styles.tableHeaderSuperRow, { borderRightWidth: 1, borderColor: '#444' }]}>
               <Text style={[styles.superHeaderCell, { width: 40 }]}>No.</Text>
-              <Text style={[styles.superHeaderCell, { width: 170, textAlign: 'left', paddingLeft: 8 }]}>Name in Native Language</Text>
-              <Text style={[styles.superHeaderCell, { width: 50 }]}>Age G.</Text>
-              <Text style={[styles.superHeaderCell, { width: 40 }]}>Unit</Text>
+              <Text style={[styles.superHeaderCell, { width: 110, textAlign: 'left', paddingLeft: 8 }]}>Name in Native Language</Text>
+              <Text style={[styles.superHeaderCell, { width: 45 }]}>Age G.</Text>
+              <Text style={[styles.superHeaderCell, { width: 35 }]}>Unit</Text>
             </View>
 
             {/* SUB HEADERS LEFT CORNER */}
             <View style={[styles.tableRow, styles.tableHeaderSubRow, { borderRightWidth: 1, borderColor: '#383f50' }]}>
               <View style={{ width: 40 }} />
-              <View style={{ width: 170 }} />
-              <View style={{ width: 50 }} />
-              <View style={{ width: 40 }} />
+              <View style={{ width: 110 }} />
+              <View style={{ width: 45 }} />
+              <View style={{ width: 35 }} />
             </View>
 
             {/* FILTERS INPUT ROW LEFT CORNER */}
             <View style={[styles.tableRow, { backgroundColor: '#13151a', borderRightWidth: 1, borderColor: '#333', height: 28, alignItems: 'center' }]}>
               <View style={{ width: 40 }} />
-              <TextInput style={[styles.filterInputCell, { width: 170 }]} placeholder="🔍 Name..." placeholderTextColor="#555" value={filterName} onChangeText={setFilterName} />
-              <TextInput style={[styles.filterInputCell, { width: 50 }]} placeholder="Group" placeholderTextColor="#555" value={filterAgeGroup} onChangeText={setFilterAgeGroup} />
-              <TextInput style={[styles.filterInputCell, { width: 40 }]} placeholder="Unit" placeholderTextColor="#555" value={filterUnit} onChangeText={setFilterUnit} />
+              <TextInput style={[styles.filterInputCell, { width: 110 }]} placeholder="🔍 Name..." placeholderTextColor="#555" value={filterName} onChangeText={setFilterName} />
+              <TextInput style={[styles.filterInputCell, { width: 45 }]} placeholder="Group" placeholderTextColor="#555" value={filterAgeGroup} onChangeText={setFilterAgeGroup} />
+              <TextInput style={[styles.filterInputCell, { width: 35 }]} placeholder="Unit" placeholderTextColor="#555" value={filterUnit} onChangeText={setFilterUnit} />
             </View>
 
             {/* MEMBER NAMES ROWS (FROZEN LIST) */}
@@ -438,11 +438,11 @@ export default function AttendanceScreen() {
               const mId = member.id;
               const statusBorderColor = determineBorderColor(mId);
               return (
-                <View key={`fixed-${mId}`} style={[styles.spreadsheetRow, { borderColor: statusBorderColor, opacity: isInputModeActive ? 1 : 0.88, width: 300 }]}>
+                <View key={`fixed-${mId}`} style={[styles.spreadsheetRow, { borderColor: statusBorderColor, opacity: isInputModeActive ? 1 : 0.88, width: 230 }]}>
                   <Text style={[styles.bodyGridCell, { width: 40, color: '#888', textAlign: 'center' }]}>{index + 1}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 170, color: '#ffffff', textAlign: 'left', fontWeight: '700' }]} numberOfLines={1}>{member.full_name}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 50, color: '#f1c40f', textAlign: 'center', fontWeight: '600' }]}>{member.age_group}</Text>
-                  <Text style={[styles.bodyGridCell, { width: 40, color: '#ffffff', textAlign: 'center' }]}>{member.unit}</Text>
+                  <Text style={[styles.bodyGridCell, { width: 110, color: '#ffffff', textAlign: 'left', fontWeight: '700' }]} numberOfLines={1}>{member.full_name}</Text>
+                  <Text style={[styles.bodyGridCell, { width: 45, color: '#f1c40f', textAlign: 'center', fontWeight: '600' }]}>{member.age_group}</Text>
+                  <Text style={[styles.bodyGridCell, { width: 35, color: '#ffffff', textAlign: 'center' }]}>{member.unit}</Text>
                 </View>
               );
             })}
@@ -565,9 +565,9 @@ const styles = StyleSheet.create({
   pickerBlackText: { color: '#000000', fontSize: 12, fontWeight: '700', backgroundColor: '#ffffff' },
   btnSubmitMember: { backgroundColor: '#1e3a8a', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 4 },
 
-  // STRUCTURAL GRID LAYOUT PATTERNS (FREEZE SIDEBAR ARCHITECTURE)
+  // STRUCTURAL GRID LAYOUT PATTERNS (FREEZE SIDEBAR ARCHITECTURE) - NA-ADJUST PARA SA MOBILE LAYOUT LARO
   tableMatrixContainer: { flexDirection: 'row', backgroundColor: '#0f1115', borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#222' },
-  leftFixedSidebar: { flexDirection: 'column', width: 300, zIndex: 10, backgroundColor: '#0f1115' },
+  leftFixedSidebar: { flexDirection: 'column', width: 230, zIndex: 10, backgroundColor: '#0f1115' },
   rightScrollableCanvas: { flex: 1, backgroundColor: '#0f1115' },
   
   tableRow: { flexDirection: 'row', alignItems: 'center' },

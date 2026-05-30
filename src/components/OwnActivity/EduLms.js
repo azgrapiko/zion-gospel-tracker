@@ -10,7 +10,7 @@ const COURSES = [
   { id: 'm2', label: 'Member II', steps: 12 },
   { id: 'se', label: 'Student Evangelist', steps: 11 },
   { id: 'e1', label: 'Evangelist I', steps: 12 },
-  { id: 'e2', label: 'Evangelist II', steps: 12 },
+  { id: 'e2', label: 'Evangelist II', steps: 18 },
   { id: 'de', label: 'Deacon(ess)', steps: 12 },
 ];
 

@@ -208,12 +208,27 @@ export default function AttendanceCard() {
     return () => clearInterval(globalSyncTimer);
   }, [userProfile?.zion_code]);
 
+  // Helper function para makuha ang kasalukuyang linggo ng buwan (e.g., 1st, 2nd, 3rd, 4th, 5th)
+const getOrdinalWeekOfMonth = () => {
+  const now = new Date();
+  const date = now.getDate();
+  
+  // Kalkulahin ang index ng linggo (1 hanggang 5)
+  const weekIndex = Math.ceil(date / 7);
+  
+  // I-map ang numero sa kaukulang ordinal suffix
+  const suffixes = ['st', 'nd', 'rd', 'th', 'th'];
+  return `${weekIndex}${suffixes[weekIndex - 1] || 'th'}`;
+};
+
+  const currentWeek = getOrdinalWeekOfMonth();
+
   return (
     <View style={styles.container}>
       {/* CARD HEADER */}
       <View style={styles.header}>
         <MaterialCommunityIcons name="calendar-clock" size={20} color={COLORS.primary} />
-        <Text style={styles.title}>Attendance Update on 4th Week</Text>
+        <Text style={styles.title}>{`Attendance Update on ${currentWeek} Week`}</Text>
       </View>
 
       {/* SPLIT LAYOUT CONTAINER */}

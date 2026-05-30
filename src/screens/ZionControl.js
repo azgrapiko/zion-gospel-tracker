@@ -120,12 +120,18 @@ export default function ZionControl() {
 
   const updateField = async (id, field, val) => {
     try {
+      // OPTIMISTIC UPDATE: I-update muna ang lokal na UI state para mabilis ang tugon
       setMembers(prev => prev.map(m => m.id === id ? { ...m, [field]: val } : m));
+      
+      // SUPABASE SYNC EXECUTION: Isulat sa remote tables
       const { error } = await supabase.from('profiles').update({ [field]: val }).eq('id', id);
       if (error) throw error;
+      
+      console.log(`Successfully synchronized field [${field}] to val [${val}] for ID: ${id}`);
     } catch (error) { 
+      console.error("Supabase Operation Failed:", error.message);
       Alert.alert("Sync Failed", error.message); 
-      fetchMembers(); 
+      fetchMembers(); // Mag-rollback sa totoong cloud data kapag sumabog
     }
   };
 
@@ -136,27 +142,47 @@ export default function ZionControl() {
   };
 
   const bulkApprove = async () => {
-    if (filteredMembers.length === 0) return;
-    const pendingCount = filteredMembers.filter(m => !m.is_approved).length;
+    if (filteredMembers.length === 0) {
+      Alert.alert("Notice", "Walang miyembro sa kasalukuyang listahan.");
+      return;
+    }
+    
+    const pendingMembers = filteredMembers.filter(m => !m.is_approved);
+    const pendingCount = pendingMembers.length;
+    
     if (pendingCount === 0) {
-      Alert.alert("Notice", "No pending approvals found.");
+      Alert.alert("Notice", "Lahat ng miyembro sa kasalukuyang filter ay aprubado na. No pending approvals found.");
       return;
     }
 
     Alert.alert(
-      "Bulk Approval",
-      `Approve ${pendingCount} pending accounts?`,
+      "Bulk Approval Center",
+      `Aprubahan ang lahat ng (${pendingCount}) na miyembro na kasama sa nasalang filter?`,
       [
         { text: "Cancel", style: "cancel" },
         { 
-          text: "Confirm", 
+          text: "Confirm & Approve All", 
           onPress: async () => {
             try {
-              const idsToUpdate = filteredMembers.filter(m => !m.is_approved).map(m => m.id);
-              const { error } = await supabase.from('profiles').update({ is_approved: true }).in('id', idsToUpdate);
+              setLoading(true);
+              const idsToUpdate = pendingMembers.map(m => m.id);
+              
+              // BULK UPDATE PIPELINE
+              const { error } = await supabase
+                .from('profiles')
+                .update({ is_approved: true })
+                .in('id', idsToUpdate);
+                
               if (error) throw error;
+              
+              // I-flush ang state patungo sa local memory upang hindi na mag-re-fetch ng buo
               setMembers(prev => prev.map(m => idsToUpdate.includes(m.id) ? { ...m, is_approved: true } : m));
-            } catch (error) { Alert.alert("Error", error.message); }
+              Alert.alert("Tagumpay!", `Naaprubahan na ang ${pendingCount} na mga miyembro.`);
+            } catch (error) { 
+              Alert.alert("Error", error.message); 
+            } finally {
+              setLoading(false);
+            }
           } 
         }
       ]
@@ -393,6 +419,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     gap: 4, 
     marginHorizontal: 4 
+  },
+  catBox: { 
+    backgroundColor: COLORS.surface, 
+    padding: 5, 
+    borderRadius: 6, 
+    flex: 1, 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: COLORS.border, 
+    minHeight: 35, 
+    justifyContent: 'center' 
+  },
+  catLabel: { 
+    fontSize: 7, 
+    fontWeight: '900', 
+    color: COLORS.primary 
   },
   catBox: { 
     backgroundColor: COLORS.surface, 

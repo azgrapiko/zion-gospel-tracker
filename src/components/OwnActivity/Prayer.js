@@ -6,6 +6,8 @@ import { Picker } from '@react-native-picker/picker';
 
 export default function Prayer() {
   const [unity, setUnity] = useState(false);
+  const [gathering, setGathering] = useState(false);
+  const [prayDaily, setPrayDaily] = useState(false);
   const [letter, setLetter] = useState(false);
   const [time, setTime] = useState('Early Morning');
   const [logs, setLogs] = useState([]);
@@ -39,6 +41,8 @@ export default function Prayer() {
     // Kinukuha ang mga napiling tasks para sa Table View
     let tasks = [];
     if (unity) tasks.push("Unity");
+    if (gathering) tasks.push("Gathering");
+    if (prayDaily) tasks.push("Pray Daily");
     if (letter) tasks.push("Letter");
     
     if (tasks.length === 0) return Alert.alert("Pansin", "Pumili ng kahit isang Prayer Task.");
@@ -60,6 +64,8 @@ export default function Prayer() {
       
       // Reset UI (keeping chosen date configuration state intact for continuous multi-logging preferences)
       setUnity(false);
+      setGathering(false);
+      setPrayDaily(false);
       setLetter(false);
     } catch (e) {
       console.error("Save Error:", e);
@@ -100,6 +106,8 @@ export default function Prayer() {
       </View>
 
       <Text style={styles.label}>SELECT PRAYER TASKS</Text>
+      
+      {/* 1. Unity Prayer */}
       <TouchableOpacity 
         style={[styles.checkRow, unity && styles.checkRowActive]} 
         onPress={() => setUnity(!unity)} 
@@ -113,6 +121,35 @@ export default function Prayer() {
         <Text style={[styles.checkText, unity && styles.checkTextActive]}>Unity Prayer</Text>
       </TouchableOpacity>
 
+      {/* 2. Prayer Gathering */}
+      <TouchableOpacity 
+        style={[styles.checkRow, gathering && styles.checkRowActive]} 
+        onPress={() => setGathering(!gathering)} 
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons 
+          name={gathering ? "checkbox-marked" : "checkbox-blank-outline"} 
+          size={24} 
+          color="#26f7ff" 
+        />
+        <Text style={[styles.checkText, gathering && styles.checkTextActive]}>Prayer Gathering</Text>
+      </TouchableOpacity>
+
+      {/* 3. Pray Daily App */}
+      <TouchableOpacity 
+        style={[styles.checkRow, prayDaily && styles.checkRowActive]} 
+        onPress={() => setPrayDaily(!prayDaily)} 
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons 
+          name={prayDaily ? "checkbox-marked" : "checkbox-blank-outline"} 
+          size={24} 
+          color="#26f7ff" 
+        />
+        <Text style={[styles.checkText, prayDaily && styles.checkTextActive]}>Pray Daily App</Text>
+      </TouchableOpacity>
+
+      {/* 4. Letter to Heavenly Mother */}
       <TouchableOpacity 
         style={[styles.checkRow, letter && styles.checkRowActive]} 
         onPress={() => setLetter(!letter)} 
