@@ -3,20 +3,34 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const ZION_TASKS = [
-  { id: 'cleaning', label: 'Cleaning Zion (Temple, Kitchen, Washing)' },
-  { id: 'visiting', label: 'Visiting (Study members)' },
-  { id: 'gathering', label: 'Gathering (Education, Online Gathering)' },
-  { id: 'food', label: 'Food Preparation (Cooking, Assist)' },
-  { id: 'carrying', label: 'Carrying Member (Assist Member, Children)' },
-  { id: 'construction', label: 'Zion Construction (Repair, Electric, Paint)' },
+// --- TAMANG SUPABASE PATH BATAY SA IYONG DIRECTORY ---
+import { supabase } from '../../utils/supabase';
+
+// MGA KATEGORYA PARA SA EDUCATION_TYPE COLUMN
+const EDUCATION_TASKS = [
+  { id: 'gathering', label: 'Gathering in Zion (Meeting, Online, Sabbath Sch.)' },
+  { id: 'edu_new', label: 'Education for New Member' },
+  { id: 'edu_regular', label: 'Education for Regular Member' },
+  { id: 'edu_evangelist', label: 'Education for Evangelist' },
+  { id: 'edu_other', label: 'Other Education' },
+];
+
+// MGA KATEGORYA PARA SA ACTIVITY_TYPE COLUMN
+const GENERAL_TASKS = [
+  { id: 'visiting', label: 'Visiting & Study members' },
+  { id: 'carrying', label: 'Carrying Children' },
+  { id: 'food', label: 'Food Preparation' },
+  { id: 'cleaning', label: 'Cleaning in Zion (Temple, Kitchen, Washing)' },
+  { id: 'construction', label: 'Construction in Zion (Repair, Paint, Electric)' },
 ];
 
 export default function ZionActivity() {
-  const [selectedTasks, setSelectedTasks] = useState([]);
+  const [selectedEducation, setSelectedEducation] = useState([]);
+  const [selectedGeneral, setSelectedGeneral] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Web-Compatible Date Initialization Formatter (YYYY-MM-DD for stable selection sync)
+  // Web-Compatible Date Initialization Formatter
   const getTodayString = () => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -25,7 +39,6 @@ export default function ZionActivity() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // User explicitly selects and updates the activity log date field
   const [date, setDate] = useState(getTodayString());
 
   useEffect(() => {
@@ -36,33 +49,101 @@ export default function ZionActivity() {
     try {
       const data = await AsyncStorage.getItem('@zion_activity_logs');
       if (data) setLogs(JSON.parse(data));
-    } catch (e) { console.error("Load Error:", e); }
+    } catch (e) { 
+      console.error("Load Error:", e); 
+    }
   };
 
-  const toggleTask = (taskId) => {
-    if (selectedTasks.includes(taskId)) {
-      setSelectedTasks(selectedTasks.filter(id => id !== taskId));
+  const toggleEducationTask = (taskId) => {
+    if (selectedEducation.includes(taskId)) {
+      setSelectedEducation(selectedEducation.filter(id => id !== taskId));
     } else {
-      setSelectedTasks([...selectedTasks, taskId]);
+      setSelectedEducation([...selectedEducation, taskId]);
+    }
+  };
+
+  const toggleGeneralTask = (taskId) => {
+    if (selectedGeneral.includes(taskId)) {
+      setSelectedGeneral(selectedGeneral.filter(id => id !== taskId));
+    } else {
+      setSelectedGeneral([...selectedGeneral, taskId]);
     }
   };
 
   const handleSave = async () => {
-    if (selectedTasks.length === 0) {
-      return Alert.alert("Pansin", "Pumili ng kahit isang aktibidad.");
+    if (selectedEducation.length === 0 && selectedGeneral.length === 0) {
+      const taskMsg = "Pumili ng kahit isang aktibidad mula sa Edukasyon o Pangkalahatang Gawain.";
+      Platform.OS === 'web' ? window.alert(taskMsg) : Alert.alert("Pansin", taskMsg);
+      return;
     }
 
-    const taskLabels = ZION_TASKS
-      .filter(t => selectedTasks.includes(t.id))
-      .map(t => t.label.split(' (')[0]); // Kinukuha lang ang main title
+    setLoading(true);
+
+    // Kuhanin ang labels para sa Local Storage display at breakdown string
+    const eduLabels = EDUCATION_TASKS.filter(t => selectedEducation.includes(t.id)).map(t => t.label);
+    const genLabels = GENERAL_TASKS.filter(t => selectedGeneral.includes(t.id)).map(t => t.label);
+    
+    // I-resolve ang mga tiyak na isusumite sa database columns
+    const dbEducationType = EDUCATION_TASKS.find(t => t.id === selectedEducation[0])?.label || null;
+    const dbActivityType = GENERAL_TASKS.find(t => t.id === selectedGeneral[0])?.label || null;
+
+    const allPicked = [...eduLabels, ...genLabels].join(', ');
+    const localId = String(Date.now());
 
     const newLog = {
-      id: Date.now().toString(),
+      id: localId,
       type: 'ZionActivity',
-      date: date, // Active chosen user date
-      activities: taskLabels.join(', '),
+      date: date,
+      activities: allPicked,
       timestamp: new Date().toISOString()
     };
+
+    try {
+      if (supabase) {
+        // 1. KUNIN ANG ACTIVE USER SESSION DIRECTLY FROM SUPABASE AUTH
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !authData?.user) {
+          throw new Error("Walang aktibong session ng user. Mangyaring mag-login muna.");
+        }
+
+        const currentUser = authData.user;
+
+        // 2. KUNIN ANG USER METADATA O PROFILE PARA SA MULTI-TENANCY TRACING
+        // Sumasangguni sa 'profiles' table gamit ang ID ng user para sa full_name at zion_code
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, zion_code')
+          .eq('id', currentUser.id)
+          .single();
+
+        // Fallback strategy kung sakaling nasa user_metadata ng Auth direct nakalagay ang properties
+        const resolvedName = profile?.full_name || currentUser.user_metadata?.full_name || currentUser.user_metadata?.user_name || 'Zion Member';
+        const resolvedZion = profile?.zion_code || currentUser.user_metadata?.zion_code || 'PLA';
+
+        // 3. ENHANCED DATA PAYLOAD WITH SECURE TENANCY KEYS
+        const payload = {
+          log_date: date,
+          education_type: dbEducationType, 
+          activity_type: dbActivityType,   
+          preaching_type: 'Zion', 
+          breakdown: allPicked, 
+          total: selectedEducation.length + selectedGeneral.length,
+          full_name: resolvedName,   // Awtomatikong pinunan mula sa session trace
+          zion_code: resolvedZion    // Awtomatikong pinunan para sa data isolation
+        };
+
+        const res = await supabase.from('gospel_activity').insert([payload]).select();
+        if (res?.data && res.data[0]) {
+          newLog.id = res.data[0].id;
+        }
+        if (res?.error) {
+          console.error("Supabase Insertion Error:", res.error.message);
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Database Sync Trace Failed:", dbErr.message || dbErr);
+    }
 
     try {
       const existing = await AsyncStorage.getItem('@zion_activity_logs');
@@ -72,14 +153,28 @@ export default function ZionActivity() {
       await AsyncStorage.setItem('@zion_activity_logs', JSON.stringify(updatedLogs));
       setLogs(updatedLogs);
       
-      Alert.alert("ZION ACTIVITY", "Many Blessing Today, Good Job po😊");
-      setSelectedTasks([]); // Reset selection
+      const successMsg = "Many Blessing Today, Good Job po😊";
+      Platform.OS === 'web' ? window.alert(successMsg) : Alert.alert("ZION ACTIVITY", successMsg);
+      
+      // Reset State Management
+      setSelectedEducation([]);
+      setSelectedGeneral([]);
+      setLoading(false);
     } catch (e) {
       console.error("Save Error:", e);
+      setLoading(false);
     }
   };
 
   const deleteLog = async (id) => {
+    try {
+      if (supabase && id.length > 10) {
+        await supabase.from('gospel_activity').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn("Database Delete Skip:", e);
+    }
+
     const filtered = logs.filter(l => l.id !== id);
     await AsyncStorage.setItem('@zion_activity_logs', JSON.stringify(filtered));
     setLogs(filtered);
@@ -107,40 +202,61 @@ export default function ZionActivity() {
               placeholderTextColor="#8a8f9e"
               onChangeText={setDate}
             />
-            <MaterialCommunityIcons name="calendar-star" size={25} color="#2281c0" />
+            <MaterialCommunityIcons name="calendar-star" size={22} color="#26f7ff" />
           </View>
         )}
       </View>
 
-      <Text style={styles.label}>SELECT ZION ACTIVITY</Text>
-      {ZION_TASKS.map((task) => (
+      {/* GRUPO 1: EDUCATION TYPE COLUMN TARGET */}
+      <Text style={styles.labelSection}>📖 EDUCATION TYPE ACTIVITIES</Text>
+      {EDUCATION_TASKS.map((task) => (
         <TouchableOpacity 
           key={task.id} 
-          style={[styles.checkRow, selectedTasks.includes(task.id) && styles.checkRowActive]} 
-          onPress={() => toggleTask(task.id)}
+          style={[styles.checkRow, selectedEducation.includes(task.id) && styles.checkRowActive]} 
+          onPress={() => toggleEducationTask(task.id)}
           activeOpacity={0.7}
         >
           <MaterialCommunityIcons 
-            name={selectedTasks.includes(task.id) ? "checkbox-marked" : "checkbox-blank-outline"} 
-            size={22} 
-            color={selectedTasks.includes(task.id) ? "#3498db" : "#8a8f9e"} 
+            name={selectedEducation.includes(task.id) ? "checkbox-marked" : "checkbox-blank-outline"} 
+            size={20} 
+            color={selectedEducation.includes(task.id) ? "#26f7ff" : "#515764"} 
           />
-          <Text style={[styles.checkText, selectedTasks.includes(task.id) && styles.checkTextActive]}>
+          <Text style={[styles.checkText, selectedEducation.includes(task.id) && styles.checkTextActive]}>
             {task.label}
           </Text>
         </TouchableOpacity>
       ))}
 
-      <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
-        <Text style={styles.submitText}>SUBMIT LOG</Text>
+      {/* GRUPO 2: ACTIVITY TYPE COLUMN TARGET */}
+      <Text style={[styles.labelSection, { marginTop: 10 }]}>🏛️ GENERAL ZION ACTIVITIES</Text>
+      {GENERAL_TASKS.map((task) => (
+        <TouchableOpacity 
+          key={task.id} 
+          style={[styles.checkRow, selectedGeneral.includes(task.id) && styles.checkRowActive]} 
+          onPress={() => toggleGeneralTask(task.id)}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons 
+            name={selectedGeneral.includes(task.id) ? "checkbox-marked" : "checkbox-blank-outline"} 
+            size={20} 
+            color={selectedGeneral.includes(task.id) ? "#26f7ff" : "#515764"} 
+          />
+          <Text style={[styles.checkText, selectedGeneral.includes(task.id) && styles.checkTextActive]}>
+            {task.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+
+      <TouchableOpacity style={styles.submitBtn} onPress={handleSave} disabled={loading}>
+        <Text style={styles.submitText}>{loading ? "SYNCING..." : "SUBMIT LOG TO SUPABASE"}</Text>
       </TouchableOpacity>
 
-      {/* --- TABLE LOGS SECTION --- */}
+      {/* --- TABLE LOGS SECTION WITHOUT NAME FOR A CLEANER UX --- */}
       <View style={styles.logsSection}>
         <Text style={styles.logHeaderLabel}>ZION ACTIVITY LOGS</Text>
         <View style={styles.tableHeader}>
           <Text style={[styles.hCell, { flex: 0.8 }]}>Date</Text>
-          <Text style={[styles.hCell, { flex: 2 }]}>Activities</Text>
+          <Text style={[styles.hCell, { flex: 2.2 }]}>Activities</Text>
           <Text style={[styles.hCell, { width: 30, textAlign: 'right' }]}>ACT</Text>
         </View>
 
@@ -149,7 +265,7 @@ export default function ZionActivity() {
             {logs.map((item) => (
               <View key={item.id} style={styles.tableRow}>
                 <Text style={styles.rCell}>{item.date}</Text>
-                <Text style={[styles.rCell, { flex: 2, color: '#ffffff', fontWeight: '500' }]} numberOfLines={2}>{item.activities}</Text>
+                <Text style={[styles.rCell, { flex: 2.2, color: '#ffffff', fontWeight: '500' }]} numberOfLines={2}>{item.activities}</Text>
                 <View style={{ width: 30, alignItems: 'flex-end' }}>
                   <TouchableOpacity onPress={() => deleteLog(item.id)}>
                     <MaterialCommunityIcons name="delete-outline" size={18} color="#ff4d4d" />
@@ -165,45 +281,48 @@ export default function ZionActivity() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#050505' },
-  headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
-  label: { color: '#3498db', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  container: { padding: 15, backgroundColor: '#050505' },
   
-  // High Contrast Calendar Pickers Structure
-  inputBoxWrapper: { marginBottom: 15 },
+  // OPTIMIZED HIGH CONTRAST DARK UI DESIGN WITH SMALLER GAPS
+  headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: '900', textAlign: 'center', marginBottom: 15, letterSpacing: 2, textTransform: 'uppercase', textShadowColor: 'rgba(38, 247, 255, 0.4)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 },
+  label: { color: '#26f7ff', fontSize: 10, fontWeight: '900', marginBottom: 6, letterSpacing: 1.2, textTransform: 'uppercase' },
+  labelSection: { color: '#ffffff', fontSize: 11, fontWeight: '900', marginTop: 6, marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase', borderLeftWidth: 3, borderLeftColor: '#26f7ff', paddingLeft: 6 },
+  
+  inputBoxWrapper: { marginBottom: 12 },
   nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#3a84c8', padding: 10, borderRadius: 8,
-    borderWidth: 1, borderColor: '#2e8ada'
+    backgroundColor: '#111115', padding: 10, borderRadius: 8,
+    borderWidth: 1, borderColor: '#26f7ff'
   },
-  inputText: { color: '#ffffff', fontSize: 14, flex: 1 },
+  inputText: { color: '#ffffff', fontSize: 13, flex: 1, fontWeight: '600' },
   webDate: { 
-    backgroundColor: '#121214', color: '#ffffff', border: '1px solid #5da6e9', 
-    padding: '12px', borderRadius: '8px', width: '50%', fontSize: '14px', 
-    fontFamily: 'inherit', outline: 'none' 
+    backgroundColor: '#111115', color: '#ffffff', border: '1px solid #26f7ff', 
+    padding: '10px', borderRadius: '8px', width: '60%', fontSize: '13px', 
+    fontFamily: 'inherit', outline: 'none', fontWeight: '600'
   },
 
   checkRow: { 
-    flexDirection: 'row', alignItems: 'center', marginBottom: 8, 
-    backgroundColor: '#121414', padding: 14, borderRadius: 8,
-    borderWidth: 1, borderColor: '#2c303b'
+    flexDirection: 'row', alignItems: 'center', marginBottom: 5, 
+    backgroundColor: '#0c0c0e', padding: 11, borderRadius: 8,
+    borderWidth: 1, borderColor: '#1f2128'
   },
-  checkRowActive: { borderColor: '#3498db', backgroundColor: '#18181c' },
-  checkText: { color: '#8a8f9e', marginLeft: 10, fontSize: 13, fontWeight: '500' },
+  checkRowActive: { borderColor: '#26f7ff', backgroundColor: '#11151a' },
+  checkText: { color: '#727885', marginLeft: 10, fontSize: 12, fontWeight: '600' },
   checkTextActive: { color: '#ffffff', fontWeight: '900' },
   
   submitBtn: { 
-    backgroundColor: '#3498db', padding: 16, borderRadius: 10, alignItems: 'center',
-    marginTop: 20, marginBottom: 30, shadowColor: '#3498db', shadowOpacity: 0.2, shadowRadius: 10
+    backgroundColor: '#111115', padding: 14, borderRadius: 10, alignItems: 'center',
+    marginTop: 15, marginBottom: 20, borderWidth: 1, borderColor: '#26f7ff',
+    shadowColor: '#26f7ff', shadowOpacity: 0.1, shadowRadius: 10
   },
-  submitText: { color: '#ffffff', fontWeight: '900', letterSpacing: 1 },
+  submitText: { color: '#26f7ff', fontWeight: '900', letterSpacing: 1.2, fontSize: 12 },
   
-  // High Contrast Table Layout Config
-  logsSection: { marginTop: 10, paddingBottom: 50 },
-  logHeaderLabel: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 12, letterSpacing: 0.5 },
-  tableHeader: { flexDirection: 'row', backgroundColor: '#18181c', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' },
-  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // High contrast header shift
+  // HIGH CONTRAST COMPACT UI FOR TABLES
+  logsSection: { marginTop: 10, paddingBottom: 40, borderTopWidth: 1, borderTopColor: '#1a1a22', paddingTop: 15 },
+  logHeaderLabel: { color: '#ffffff', fontSize: 13, fontWeight: '900', marginBottom: 10, letterSpacing: 0.8 },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#111115', padding: 10, borderRadius: 6, borderBottomWidth: 1, borderBottomColor: '#26f7ff' },
+  hCell: { color: '#727885', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }, 
   listWrapper: { maxHeight: 200 },
-  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
-  rCell: { color: '#ffffff', fontSize: 10, flex: 0.8, fontWeight: '500' }
+  tableRow: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#111115', alignItems: 'center' },
+  rCell: { color: '#ffffff', fontSize: 11, flex: 0.8, fontWeight: '600' }
 });

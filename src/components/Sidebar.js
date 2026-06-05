@@ -135,8 +135,18 @@ export default function Sidebar({ navigation, state }) {
             isActive={currentRoute === 'Attendance'}
           />
         )}
+
+        {/* [ADMIN ONLY] 6. EVANGELIST LOG */}
+        {isAdmin && (
+          <MenuItem 
+            icon="file-document-edit-outline" 
+            title="Evangelist Log" 
+            target="EvangelistLog" 
+            isActive={currentRoute === 'EvangelistLog'}
+          />
+        )}
         
-        {/* [PUBLIC] 6. HELP & FEEDBACK (Target structural route name is linked to 'Settings') */}
+        {/* [PUBLIC] 7. HELP & FEEDBACK (Target structural route name is linked to 'Settings') */}
         <MenuItem 
           icon="help-circle-outline" 
           title="Help & Feedback" 
@@ -145,7 +155,7 @@ export default function Sidebar({ navigation, state }) {
         />
       </View>
 
-      {/* 7. LOGOUT SECTION */}
+      {/* 8. LOGOUT SECTION */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogoutPress}>
         <View style={styles.iconWrapper}>
           <MaterialCommunityIcons name="power" size={28} color="#ff4d4d" />

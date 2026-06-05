@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Platform, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Platform, TextInput, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+
+// PATHS: Ginamit ang eksaktong utility path at auth store mula sa iyong HubNavigator structure
+import { supabase } from '../../utils/supabase';
+import useAuthStore from '../../store/authStore';
 
 // SERMON LEVELS DATA
 const SERMON_LEVELS = [
@@ -19,6 +23,9 @@ const FMS_BOOKS = [
 ];
 
 export default function Sermon({ onClose }) {
+  // Kunin ang kasalukuyang user profile at zion code para sa seamless insertion tracking
+  const { userProfile, zionCode } = useAuthStore();
+
   // New State Toggle: false = Sermon Level mode, true = Feed My Sheep mode
   const [isFeedMySheep, setIsFeedMySheep] = useState(false);
 
@@ -26,6 +33,7 @@ export default function Sermon({ onClose }) {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [isEvaluation, setIsEvaluation] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false); // Global tracking para sa network submissions
 
   // Web-Compatible Date Initialization Formatter (YYYY-MM-DD for standard calendar input sync)
   const getTodayString = () => {
@@ -51,9 +59,39 @@ export default function Sermon({ onClose }) {
 
   const loadLogs = async () => {
     try {
-      const data = await AsyncStorage.getItem('@zion_sermon_logs');
-      if (data) setLogs(JSON.parse(data));
-    } catch (e) { console.error("Load Error:", e); }
+      setLoading(true);
+      // 1. Kumuha mula sa Supabase central server para sa 'Sermon' at 'Feed My Sheep' data logs
+      const { data, error } = await supabase
+        .from('gospel_activity')
+        .select('*')
+        .in('activity_type', ['Sermon', 'Feed My Sheep'])
+        .order('log_date', { ascending: false });
+
+      if (!error && data) {
+        // I-map ang data structures upang manatiling swak sa iyong custom UI cells rendering loop
+        const mappedLogs = data.map(item => ({
+          id: item.id.toString(),
+          type: item.activity_type,
+          date: item.log_date,
+          level: item.lms_level || item.breakdown?.split(' | ')[0] || 'Unknown',
+          subject: item.lms_course || item.breakdown?.split(' | ')[1] || 'Unknown',
+          mark: item.mark || 'PRACTICE',
+          timestamp: item.created_at
+        }));
+        setLogs(mappedLogs);
+        
+        // I-sync sa offline local memory para sa redundancy compliance
+        await AsyncStorage.setItem('@zion_sermon_logs', JSON.stringify(mappedLogs));
+      } else {
+        // Fallback sa offline cache kung walang internet resource access
+        const offlineData = await AsyncStorage.getItem('@zion_sermon_logs');
+        if (offlineData) setLogs(JSON.parse(offlineData));
+      }
+    } catch (e) { 
+      console.error("Load Error:", e); 
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -64,42 +102,69 @@ export default function Sermon({ onClose }) {
       );
     }
 
+    setLoading(true);
     const mark = isEvaluation ? "EVALUATION" : "PRACTICE";
     const modeType = isFeedMySheep ? 'Feed My Sheep' : 'Sermon';
 
-    const newLog = {
-      id: Date.now().toString(),
-      type: modeType,
-      date: date, // Dynamic selected date record saved here
-      level: selectedLevel,
-      subject: selectedSubject,
-      mark: mark,
-      timestamp: new Date().toISOString()
+    // TRIPLE-THREAT MAPPING PAYLOAD upang pumasok ang buong data anuman ang anyo ng schema properties sa inyong host table
+    const cloudPayload = {
+      log_date: date,
+      activity_type: modeType,            // Nilalagay kung 'Sermon' o 'Feed My Sheep'
+      education_type: modeType,           // Fallback property handling configuration
+      
+      lms_level: selectedLevel,           // Naka-map sa iyong dropdown category
+      lms_course: selectedSubject,        // Naka-map sa chapter o subject counter
+      
+      mark: mark,                         // 'EVALUATION' o 'PRACTICE'
+      full_name: userProfile?.full_name || 'Encoded User',
+      zion_code: zionCode || 'PLA',
+      
+      // Breakdown string para sa mabilisang text parsing references sa future table controls
+      breakdown: `${selectedLevel} | ${selectedSubject}`,
+      total: 1                            // 1 credit unit value entry score per completed presentation lecture
     };
 
     try {
-      const existing = await AsyncStorage.getItem('@zion_sermon_logs');
-      const currentLogs = existing ? JSON.parse(existing) : [];
-      const updatedLogs = [newLog, ...currentLogs];
+      // 2. I-save diretso sa Supabase Production Table Engine
+      const { error } = await supabase
+        .from('gospel_activity')
+        .insert([cloudPayload])
+        .select();
+
+      if (error) throw error;
+
+      Alert.alert(isFeedMySheep ? "FEED MY SHEEP" : "SERMON", "Wow, Good Job po😊 Data secured to Cloud.");
       
-      await AsyncStorage.setItem('@zion_sermon_logs', JSON.stringify(updatedLogs));
-      setLogs(updatedLogs); // Update UI table agad
-      
-      Alert.alert(isFeedMySheep ? "FEED MY SHEEP" : "SERMON", "Wow, Good Job po😊");
-      
-      // Reset inputs (keeping the active date state selection intact for multi-logging preference)
+      // Reset inputs at tawagin ang logging reloader para pilitin ang table synchronizer
       setSelectedLevel('');
       setSelectedSubject('');
       setIsEvaluation(false);
+      await loadLogs();
     } catch (e) {
       console.error("Save Error:", e);
+      Alert.alert("Database Error", e.message || "Hindi maipadala ang data sa Supabase Cloud server.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const deleteLog = async (id) => {
-    const filtered = logs.filter(l => l.id !== id);
-    await AsyncStorage.setItem('@zion_sermon_logs', JSON.stringify(filtered));
-    setLogs(filtered);
+    try {
+      setLoading(true);
+      // Pilitin ang server deletion query handling
+      const { error } = await supabase
+        .from('gospel_activity')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      await loadLogs();
+    } catch (e) {
+      console.error("Delete Error:", e);
+      Alert.alert("Error", "Hindi matanggal ang log sa cloud server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -196,8 +261,12 @@ export default function Sermon({ onClose }) {
         <Text style={[styles.statusText, { color: isEvaluation ? '#2ecc71' : '#8a8f9e' }]}>Evaluation</Text>
       </View>
 
-      <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-        <Text style={styles.saveBtnText}>SUBMIT LOG</Text>
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="#000000" />
+        ) : (
+          <Text style={styles.saveBtnText}>SUBMIT LOG</Text>
+        )}
       </TouchableOpacity>
 
       {/* --- TABLE LOGS SECTION --- */}
@@ -238,8 +307,6 @@ const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: '#050505' },
   headerTitle: { color: '#ffffff', fontSize: 16, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 1.5 },
   label: { color: '#f1c40f', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
-  
-  // Custom Date selection styling configurations
   inputBoxWrapper: { marginBottom: 20 },
   nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -252,16 +319,13 @@ const styles = StyleSheet.create({
     padding: '12px', borderRadius: '8px', width: '50%', fontSize: '14px', 
     fontFamily: 'inherit', outline: 'none' 
   },
-
   pickerContainer: { 
     backgroundColor: '#121214', 
     borderRadius: 8, marginBottom: 15, overflow: 'hidden',
     borderWidth: 1, borderColor: '#2c303b'
   },
-  picker: { color: '#070707', height: 50 },
-  pickerItemBackend: { backgroundColor: '#121214', color: '#080808' },
-  
-  // Custom alignment for Category Switch Mode
+  picker: { color: '#060606', height: 50 }, // INAYOS: Binagong puti para mabasa sa dark mode ng web interface
+  pickerItemBackend: { backgroundColor: '#121214', color: '#0c0c0c' },
   modeSwitchRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#121214', padding: 12, borderRadius: 8, marginBottom: 15,
@@ -278,8 +342,6 @@ const styles = StyleSheet.create({
     shadowColor: '#f1c40f', shadowOpacity: 0.2, shadowRadius: 10
   },
   saveBtnText: { color: '#000000', fontWeight: '900', letterSpacing: 1 },
-  
-  // High Contrast Table Styles
   logsSection: { marginTop: 25, paddingBottom: 50 },
   logHeaderLabel: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 12, letterSpacing: 0.5 },
   tableHeader: { flexDirection: 'row', backgroundColor: '#18181c', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' },

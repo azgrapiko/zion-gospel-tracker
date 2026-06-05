@@ -9,6 +9,7 @@ export default function SimpleForm({
   partner1, setPartner1,
   partner2, setPartner2,
   reportedBy, setReportedBy,
+  preachingType, setPreachingType, 
   simpleData,
   updateCount,
   handleTempSave, 
@@ -63,7 +64,7 @@ export default function SimpleForm({
         <Text style={styles.zionBadge}>{zionCode || 'PLA'}</Text>
       </View>
       
-      {/* INFO GRID: DATE & LOCATION */}
+      {/* INFO GRID Row 1: DATE ONLY */}
       <View style={styles.infoGrid}>
          <View style={styles.inputWrapper}>
             <Text style={styles.miniLabel}>PREACHING DATE</Text>
@@ -79,11 +80,53 @@ export default function SimpleForm({
                 style={styles.smallInput}
                 value={preachingDate}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+                placeholderTextColor="#8a8f9e"
                 onChangeText={setPreachingDate}
               />
             )}
          </View>
+         <View style={styles.inputWrapper} />
+      </View>
+
+      {/* INFO GRID Row 2: PREACHING TYPE & LOCATION / AREA */}
+      <View style={styles.infoGrid}>
+         <View style={styles.inputWrapper}>
+            <Text style={styles.miniLabel}>PREACHING TYPE</Text>
+            {Platform.OS === 'web' ? (
+              <select 
+                value={preachingType} 
+                onChange={(e) => {
+                  if (typeof setPreachingType === 'function') {
+                    setPreachingType(e.target.value);
+                  } else {
+                    console.error("Critical Check: setPreachingType prop ay hindi nakakarating mula kay HubNavigator.");
+                  }
+                }} 
+                style={styles.webSelect}
+              >
+                {['', 'Door to door', 'Street', 'Event', 'Acquaintance', 'Online'].map(opt => (
+                  <option key={opt} value={opt} style={{ color: '#ffffff', backgroundColor: '#121214' }}>
+                    {opt || 'Select Type'}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <View style={styles.dropdownNativeWrapper}>
+                 <TextInput 
+                    style={styles.smallInput}
+                    value={preachingType}
+                    placeholder="Door to door / Street / Event / Online"
+                    placeholderTextColor="#4e5464"
+                    onChangeText={(val) => {
+                      if (typeof setPreachingType === 'function') {
+                        setPreachingType(val);
+                      }
+                    }}
+                 />
+              </View>
+            )}
+         </View>
+
          <View style={styles.inputWrapper}>
             <Text style={styles.miniLabel}>LOCATION / AREA</Text>
             <TextInput 
@@ -91,7 +134,7 @@ export default function SimpleForm({
               onChangeText={setLocation} 
               style={styles.smallInput} 
               placeholder="Enter Area" 
-              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+              placeholderTextColor="#8a8f9e" 
             />
          </View>
       </View>
@@ -104,7 +147,7 @@ export default function SimpleForm({
               onChangeText={setReportedBy} 
               style={[styles.smallInput, {marginBottom: 12}]} 
               placeholder="Your Full Name (Encoded By)" 
-              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+              placeholderTextColor="#8a8f9e" 
          />
 
          <Text style={styles.miniLabel}>TEAM PARTNERS</Text>
@@ -114,15 +157,15 @@ export default function SimpleForm({
               onChangeText={setPartner1} 
               style={[styles.smallInput, {flex: 1, marginRight: 8}]} 
               placeholder="Partner 1" 
-              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+              placeholderTextColor="#8a8f9e" 
             />
             <TextInput 
               value={partner2} 
               onChangeText={setPartner2} 
               style={[styles.smallInput, {flex: 1}]} 
               placeholder="Partner 2" 
-              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
-            />
+              placeholderTextColor="#8a8f9e" 
+         />
          </View>
       </View>
 
@@ -159,34 +202,45 @@ export default function SimpleForm({
       </View>
 
       {/* LOGS TABLE SECTION */}
-      {/* HIGH CONTRAST FIXED: Itinaas ang kulay ng section header upang hindi lumubog sa dilim */}
       <Text style={[styles.sectionLabel, {marginTop: 35, color: '#a2a8b6'}]}>DAILY TOTAL LOGS</Text>
       <View style={styles.tableHeader}>
-         <Text style={[styles.th, {flex: 0.5}]}>DATE</Text>
-         <Text style={[styles.th, {flex: 0.8}]}>TEAM</Text>
-         <Text style={[styles.th, {flex: 0.8}]}>AREA</Text>
-         <Text style={[styles.th, {flex: 1.0}]}>BREAKDOWN</Text>
-         <Text style={[styles.th, {textAlign: 'right', flex: 0.3}]}>TOT</Text>
-         <Text style={[styles.th, {flex: 0.4}]}></Text>
+         <Text style={[styles.th, {flex: 0.4}]}>DATE</Text>
+         <Text style={[styles.th, {flex: 0.6}]}>TYPE</Text>
+         <Text style={[styles.th, {flex: 0.7}]}>TEAM</Text>
+         <Text style={[styles.th, {flex: 0.7}]}>AREA</Text>
+         <Text style={[styles.th, {flex: 0.9}]}>BREAKDOWN</Text>
+         <Text style={[styles.th, {textAlign: 'right', flex: 0.25}]}>TOT</Text>
+         <Text style={[styles.th, {flex: 0.35}]}></Text>
       </View>
       
-      {submittedLogs.map((log) => (
-        <View key={log.id} style={styles.tableRow}>
-           <Text style={[styles.td, {flex: 0.5}]}>{log.date ? log.date.slice(5) : '---'}</Text>
-           <Text style={[styles.td, {flex: 0.8, color: '#a2a8b6', fontSize: 10}]}>{log.team}</Text>
-           <Text style={[styles.td, {flex: 0.8, color: '#26f7ff', fontWeight: '900'}]}>{log.area}</Text>
-           <Text style={[styles.td, {flex: 1.0, fontSize: 9, color: '#ffffff', fontWeight: '500'}]}>{log.breakdown}</Text>
-           <Text style={[styles.td, {textAlign: 'right', flex: 0.3, color: '#26f7ff', fontWeight: '900'}]}>{log.total}</Text>
-           <View style={{flex: 0.4, flexDirection: 'row', justifyContent: 'flex-end'}}>
-              <TouchableOpacity onPress={() => handleEdit(log)} style={{marginRight: 10}}>
-                <MaterialCommunityIcons name="pencil-outline" size={18} color="#ffaa00" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDelete(log.id)}>
-                <MaterialCommunityIcons name="trash-can-outline" size={18} color="#ff4444" />
-              </TouchableOpacity>
-           </View>
-        </View>
-      ))}
+      {submittedLogs.map((log) => {
+        const rawDate = log.log_date || log.date || '';
+        const displayDate = rawDate ? rawDate.slice(5) : '---';
+        
+        const displayType = log.preaching_type || log.preachingType || log.type || preachingType || 'Select Type';
+        const displayArea = log.area || log.location || 'No Area';
+
+        return (
+          <View key={log.id} style={styles.tableRow}>
+             <Text style={[styles.td, {flex: 0.4}]}>{displayDate}</Text>
+             <Text style={[styles.td, {flex: 0.6, color: '#ffaa00', fontWeight: '700', fontSize: 9}]}>
+               {displayType}
+             </Text>
+             <Text style={[styles.td, {flex: 0.7, color: '#a2a8b6', fontSize: 10}]} numberOfLines={1}>{log.team}</Text>
+             <Text style={[styles.td, {flex: 0.7, color: '#26f7ff', fontWeight: '900'}]} numberOfLines={1}>{displayArea}</Text>
+             <Text style={[styles.td, {flex: 0.9, fontSize: 9, color: '#ffffff', fontWeight: '500'}]} numberOfLines={1}>{log.breakdown}</Text>
+             <Text style={[styles.td, {textAlign: 'right', flex: 0.25, color: '#26f7ff', fontWeight: '900'}]}>{log.total}</Text>
+             <View style={{flex: 0.35, flexDirection: 'row', justifyContent: 'flex-end'}}>
+                <TouchableOpacity onPress={() => handleEdit(log)} style={{marginRight: 8}}>
+                  <MaterialCommunityIcons name="pencil-outline" size={16} color="#ffaa00" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(log.id)}>
+                  <MaterialCommunityIcons name="trash-can-outline" size={16} color="#ff4444" />
+                </TouchableOpacity>
+             </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -200,13 +254,15 @@ const styles = StyleSheet.create({
   inputWrapper: { width: '48%' },
   miniLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
   smallInput: { backgroundColor: '#121214', color: '#FFFFFF', padding: 12, borderRadius: 8, fontSize: 14, borderWidth: 1, borderColor: '#2c303b' },
-  webDate: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '10px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit' },
-  TeamSection: { marginBottom: 20 },
+  webDate: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '10px', borderRadius: '8px', width: '95%', fontSize: '14px', fontFamily: 'inherit' },
+  webSelect: { backgroundColor: '#121214', color: '#FFFFFF', border: '1px solid #2c303b', padding: '12px', borderRadius: '8px', width: '100%', fontSize: '14px', fontFamily: 'inherit', outline: 'none' },
+  dropdownNativeWrapper: { width: '100%' },
+  TeamSection: { marginTop: 10, marginBottom: 20 },
   counterContainer: { backgroundColor: '#121214', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#232329' },
   categoryLabel: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 15, textAlign: 'center', letterSpacing: 2 },
   counterRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   counterBox: { flex: 1, alignItems: 'center' },
-  counterLabel: { color: '#ffffff', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 0.3 }, // Pure white para mas makita ng nakakatanda
+  counterLabel: { color: '#ffffff', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 0.3 }, 
   controlGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#18181c', borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#3a3e4b' },
   miniBtn: { width: 34, height: 34, backgroundColor: '#232329', borderRadius: 17, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#4a4f5d' },
   btnTxt: { color: '#26f7ff', fontSize: 22, fontWeight: '900' },
@@ -216,7 +272,7 @@ const styles = StyleSheet.create({
   btnSubmit: { flex: 1, backgroundColor: '#26f7ff', padding: 16, borderRadius: 12, alignItems: 'center' },
   btnLabel: { color: '#FFFFFF', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#232329', paddingBottom: 10, marginTop: 20 },
-  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900' }, // High-contrast headers mula sa dating #555
+  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900' }, 
   tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
   td: { color: '#ffffff', fontSize: 10 }
 });

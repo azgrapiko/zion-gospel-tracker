@@ -4,6 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 
+// --- TAMANG SUPABASE PATH BATAY SA IYONG DIRECTORY ---
+import { supabase } from '../../utils/supabase';
+
 export default function Prayer() {
   const [unity, setUnity] = useState(false);
   const [gathering, setGathering] = useState(false);
@@ -11,6 +14,7 @@ export default function Prayer() {
   const [letter, setLetter] = useState(false);
   const [time, setTime] = useState('Early Morning');
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Web-Compatible Date Initialization Formatter (YYYY-MM-DD for standard calendar field sync)
   const getTodayString = () => {
@@ -38,41 +42,109 @@ export default function Prayer() {
   };
 
   const handleSave = async () => {
-    // Kinukuha ang mga napiling tasks para sa Table View
+    // Kinukuha ang mga napiling tasks para sa Table View at display
     let tasks = [];
     if (unity) tasks.push("Unity");
     if (gathering) tasks.push("Gathering");
     if (prayDaily) tasks.push("Pray Daily");
     if (letter) tasks.push("Letter");
     
-    if (tasks.length === 0) return Alert.alert("Pansin", "Pumili ng kahit isang Prayer Task.");
+    if (tasks.length === 0) {
+      const taskMsg = "Pumili ng kahit isang Prayer Task.";
+      Platform.OS === 'web' ? window.alert(taskMsg) : Alert.alert("Pansin", taskMsg);
+      return;
+    }
+
+    setLoading(true);
+    const joinedTasks = tasks.join(', ');
+    const localId = String(Date.now());
 
     const newLog = {
-      id: Date.now().toString(),
+      id: localId,
       date: date, // Active chosen interactive date field saved
       time: time,
-      taskDisplay: tasks.join(', '),
+      taskDisplay: joinedTasks,
       timestamp: new Date().toISOString()
     };
+
+    try {
+      if (supabase) {
+        // 1. KUNIN ANG ACTIVE USER SESSION PARA SA AUTOMATIC TRACING
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !authData?.user) {
+          throw new Error("Walang aktibong session ng user. Mangyaring mag-login muna.");
+        }
+
+        const currentUser = authData.user;
+
+        // 2. KUNIN ANG USER METADATA O PROFILE PARA SA MULTI-TENANCY SECURE TRACING
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, zion_code')
+          .eq('id', currentUser.id)
+          .single();
+
+        const resolvedName = profile?.full_name || currentUser.user_metadata?.full_name || currentUser.user_metadata?.user_name || 'Zion Member';
+        const resolvedZion = profile?.zion_code || currentUser.user_metadata?.zion_code || 'PLA';
+
+        // 3. CONDITIONAL GATING: TARGETING SUPABASE INSERT ONLY IF "PRAYER GATHERING" IS SELECTED
+        if (gathering) {
+          const payload = {
+            log_date: date,
+            full_name: resolvedName,
+            zion_code: resolvedZion,
+            preaching_type: 'Prayer',
+            activity_type: 'Prayer Gathering', // Gated explicitly
+            prayer_task: joinedTasks,
+            mark: time, // Isinama ang Time completion schedule field ayon sa specification
+            total: 1
+          };
+
+          const res = await supabase.from('gospel_activity').insert([payload]).select();
+          if (res?.data && res.data[0]) {
+            newLog.id = res.data[0].id;
+          }
+          if (res?.error) {
+            console.error("Supabase Insertion Error:", res.error.message);
+          }
+        } else {
+          console.log("Supabase insertion skipped: Prayer Gathering is not selected.");
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Database Sync Trace Failed:", dbErr.message || dbErr);
+    }
 
     try {
       const updated = [newLog, ...logs];
       await AsyncStorage.setItem('@zion_prayer_logs', JSON.stringify(updated));
       setLogs(updated);
       
-      Alert.alert("PRAYER", "Pagpalain ka ng Diyos sa iyong Pasasalamat 😊");
+      const successMsg = "Pagpalain ka ng Diyos sa iyong Pasasalamat 😊";
+      Platform.OS === 'web' ? window.alert(successMsg) : Alert.alert("PRAYER", successMsg);
       
-      // Reset UI (keeping chosen date configuration state intact for continuous multi-logging preferences)
+      // Reset UI fields
       setUnity(false);
       setGathering(false);
       setPrayDaily(false);
       setLetter(false);
+      setLoading(false);
     } catch (e) {
       console.error("Save Error:", e);
+      setLoading(false);
     }
   };
 
   const deleteLog = async (id) => {
+    try {
+      if (supabase && id.length > 10) {
+        await supabase.from('gospel_activity').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn("Database Delete Skip:", e);
+    }
+
     const filtered = logs.filter(l => l.id !== id);
     await AsyncStorage.setItem('@zion_prayer_logs', JSON.stringify(filtered));
     setLogs(filtered);
@@ -178,8 +250,8 @@ export default function Prayer() {
         </Picker>
       </View>
 
-      <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
-        <Text style={styles.submitText}>SUBMIT LOG</Text>
+      <TouchableOpacity style={styles.submitBtn} onPress={handleSave} disabled={loading}>
+        <Text style={styles.submitText}>{loading ? "SYNCING..." : "SUBMIT LOG"}</Text>
       </TouchableOpacity>
 
       {/* --- PRAYER HISTORY TABLE --- */}
@@ -214,58 +286,58 @@ export default function Prayer() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#050505' },
-  headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
-  label: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  container: { padding: 15, backgroundColor: '#050505' },
+  headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 15, letterSpacing: 2 },
+  label: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 6, letterSpacing: 1 },
   
   // Custom High Contrast Interactive Date Field Config
-  inputBoxWrapper: { marginBottom: 15 },
+  inputBoxWrapper: { marginBottom: 12 },
   nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#121214', padding: 12, borderRadius: 8,
+    backgroundColor: '#121214', padding: 10, borderRadius: 8,
     borderWidth: 1, borderColor: '#2c303b'
   },
-  inputText: { color: '#30edf3', fontSize: 14, flex: 1 },
+  inputText: { color: '#30edf3', fontSize: 13, flex: 1 },
   webDate: { 
     backgroundColor: '#121214', color: '#4afcff', border: '1px solid #49e5e0', 
-    padding: '12px', borderRadius: '8px', width: '50%', fontSize: '14px', 
+    padding: '10px', borderRadius: '8px', width: '60%', fontSize: '13px', 
     fontFamily: 'inherit', outline: 'none' 
   },
 
   checkRow: { 
-    flexDirection: 'row', alignItems: 'center', marginBottom: 10, 
-    backgroundColor: '#121214', padding: 15, borderRadius: 10,
+    flexDirection: 'row', alignItems: 'center', marginBottom: 6, 
+    backgroundColor: '#121214', padding: 12, borderRadius: 8,
     borderWidth: 1, borderColor: '#2c303b'
   },
   checkRowActive: { borderColor: '#26f7ff', backgroundColor: '#18181c' },
-  checkText: { color: '#8a8f9e', marginLeft: 12, fontSize: 13, fontWeight: '500' },
+  checkText: { color: '#8a8f9e', marginLeft: 10, fontSize: 12, fontWeight: '500' },
   checkTextActive: { color: '#ffffff', fontWeight: '900' },
 
   pickerWrap: { 
     backgroundColor: '#121214', 
-    borderRadius: 8, marginBottom: 20, overflow: 'hidden',
+    borderRadius: 8, marginBottom: 12, overflow: 'hidden',
     borderWidth: 1, borderColor: '#2c303b'
   },
-  picker: { color: '#0d0c0c', height: 50 },
+  picker: { color: '#0d0c0c', height: 45 },
   pickerItemBackend: { backgroundColor: '#121214', color: '#ffffff' },
 
   submitBtn: { 
-    backgroundColor: '#26f7ff', padding: 16, borderRadius: 10, 
-    alignItems: 'center', marginBottom: 30, shadowColor: '#26f7ff', shadowOpacity: 0.2, shadowRadius: 10
+    backgroundColor: '#26f7ff', padding: 14, borderRadius: 10, 
+    alignItems: 'center', marginBottom: 20, shadowColor: '#26f7ff', shadowOpacity: 0.1, shadowRadius: 10
   },
-  submitText: { color: '#000000', fontWeight: '900', letterSpacing: 1 },
+  submitText: { color: '#000000', fontWeight: '900', letterSpacing: 1, fontSize: 12 },
   
   // High Contrast Table Layout Config
-  logsSection: { marginTop: 10, paddingBottom: 50 },
-  logHeaderLabel: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 12, letterSpacing: 0.5 },
+  logsSection: { marginTop: 10, paddingBottom: 40 },
+  logHeaderLabel: { color: '#ffffff', fontSize: 12, fontWeight: '900', marginBottom: 10, letterSpacing: 0.5 },
   tableHeader: { 
-    flexDirection: 'row', backgroundColor: '#18181c', padding: 10, 
+    flexDirection: 'row', backgroundColor: '#18181c', padding: 8, 
     borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' 
   },
-  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // Shifted to higher layout visibility contrast
+  hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, 
   listWrapper: { maxHeight: 200 },
   tableRow: { 
-    flexDirection: 'row', padding: 12, borderBottomWidth: 1, 
+    flexDirection: 'row', padding: 10, borderBottomWidth: 1, 
     borderBottomColor: '#121214', alignItems: 'center' 
   },
   rCell: { color: '#ffffff', fontSize: 10, flex: 1, fontWeight: '500' }

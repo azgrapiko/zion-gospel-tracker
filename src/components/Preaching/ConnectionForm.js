@@ -12,7 +12,7 @@ export default function ConnectionForm({
   location, setLocation,
   age, setAge,
   inviteeType, setInviteeType,
-  preachType, setPreachType,
+  prechType, setPreachType,
   tool, setTool,
   isValid, setIsValid,
   m1, setM1,
@@ -28,6 +28,9 @@ export default function ConnectionForm({
   handleDelete
 }) {
   const { zionCode } = useAuthStore();
+
+  // Guard Clause para sa safe rendering ng array
+  const safeLogs = Array.isArray(logs) ? logs : [];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -52,9 +55,9 @@ export default function ConnectionForm({
           ) : (
             <TextInput 
               style={styles.input}
-              value={dateMet}
+              value={dateMet || ''}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+              placeholderTextColor="#8a8f9e"
               onChangeText={setDateMet}
             />
           )}
@@ -71,9 +74,9 @@ export default function ConnectionForm({
           ) : (
             <TextInput 
               style={styles.input}
-              value={promiseDate}
+              value={promiseDate || ''}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+              placeholderTextColor="#8a8f9e"
               onChangeText={setPromiseDate}
             />
           )}
@@ -86,16 +89,16 @@ export default function ConnectionForm({
         <TextInput 
           style={[styles.input, {flex: 1, marginRight: 8}]} 
           placeholder="First Name" 
-          value={listener} 
+          value={listener || ''} 
           onChangeText={setListener} 
-          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+          placeholderTextColor="#8a8f9e"
         />
         <TextInput 
           style={[styles.input, {flex: 1}]} 
           placeholder="Phone / Messenger" 
-          value={contact} 
+          value={contact || ''} 
           onChangeText={setContact} 
-          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+          placeholderTextColor="#8a8f9e"
         />
       </View>
 
@@ -103,16 +106,16 @@ export default function ConnectionForm({
       <TextInput 
         style={[styles.input, {marginBottom: 12}]} 
         placeholder="Location of Listener" 
-        value={location} 
+        value={location || ''} 
         onChangeText={setLocation} 
-        placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+        placeholderTextColor="#8a8f9e"
       />
 
       {/* 3. DROPDOWNS ROW 1 */}
       <View style={styles.infoGrid}>
         <View style={{flex: 1, marginRight: 8}}>
           <Text style={styles.miniLabel}>AGE CATEGORY</Text>
-          <select value={age} onChange={(e) => setAge(e.target.value)} style={styles.webSelect}>
+          <select value={age || ''} onChange={(e) => setAge(e.target.value)} style={styles.webSelect}>
             {['','MA','FA','MYW','FYW','MYU','FYU','MSH','FSH','MMS','FMS','M Elem','F Elem','ME','FE'].map(opt => (
               <option key={opt} value={opt}>{opt || 'Select Age'}</option>
             ))}
@@ -120,7 +123,7 @@ export default function ConnectionForm({
         </View>
         <View style={{flex: 1}}>
           <Text style={styles.miniLabel}>INVITEE TYPE</Text>
-          <select value={inviteeType} onChange={(e) => setInviteeType(e.target.value)} style={styles.webSelect}>
+          <select value={inviteeType || ''} onChange={(e) => setInviteeType(e.target.value)} style={styles.webSelect}>
             {['','Family','Work','School','Friend','Neighbor','Public','Other'].map(opt => (
               <option key={opt} value={opt}>{opt || 'Select Type'}</option>
             ))}
@@ -132,7 +135,7 @@ export default function ConnectionForm({
       <View style={styles.infoGrid}>
         <View style={{flex: 1, marginRight: 8}}>
           <Text style={styles.miniLabel}>PREACHING TYPE</Text>
-          <select value={preachType} onChange={(e) => setPreachType(e.target.value)} style={styles.webSelect}>
+          <select value={prechType || ''} onChange={(e) => setPreachType(e.target.value)} style={styles.webSelect}>
             {['','Door-to-door','Street','Event','Acquaintance'].map(opt => (
               <option key={opt} value={opt}>{opt || 'Select Type'}</option>
             ))}
@@ -140,7 +143,7 @@ export default function ConnectionForm({
         </View>
         <View style={{flex: 1}}>
           <Text style={styles.miniLabel}>TOOLS USED</Text>
-          <select value={tool} onChange={(e) => setTool(e.target.value)} style={styles.webSelect}>
+          <select value={tool || ''} onChange={(e) => setTool(e.target.value)} style={styles.webSelect}>
             {['','Bible','Binder','Card News','Feed My Sheep','Pamphlet','Post Card','UCC Video','Intro. Video'].map(opt => (
               <option key={opt} value={opt}>{opt || 'Select Tool'}</option>
             ))}
@@ -153,24 +156,24 @@ export default function ConnectionForm({
       <TextInput 
         style={styles.input} 
         placeholder="Member 1 (Lead)" 
-        value={m1} 
+        value={m1 || ''} 
         onChangeText={setM1} 
-        placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+        placeholderTextColor="#8a8f9e"
       />
       <View style={styles.infoGrid}>
         <TextInput 
           style={[styles.input, {flex: 1, marginRight: 8, marginTop: 8}]} 
           placeholder="Member 2" 
-          value={m2} 
+          value={m2 || ''} 
           onChangeText={setM2} 
-          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+          placeholderTextColor="#8a8f9e"
         />
         <TextInput 
           style={[styles.input, {flex: 1, marginTop: 8}]} 
           placeholder="Member 3" 
-          value={m3} 
+          value={m3 || ''} 
           onChangeText={setM3} 
-          placeholderTextColor="#8a8f9e" // HIGH CONTRAST FIXED
+          placeholderTextColor="#8a8f9e"
         />
       </View>
 
@@ -208,7 +211,6 @@ export default function ConnectionForm({
       </TouchableOpacity>
 
       {/* 8. LOGS TABLE */}
-      {/* HIGH CONTRAST FIXED: Iniangat ang kulay ng section label mula sa madilim na #444 */}
       <Text style={[styles.sectionLabel, {marginTop: 40, color: '#a2a8b6'}]}>CONNECTION LOGS</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={true}>
         <View style={{paddingBottom: 40}}>
@@ -216,18 +218,20 @@ export default function ConnectionForm({
             <Text style={[styles.th, {width: 60}]}>DATE</Text>
             <Text style={[styles.th, {width: 100}]}>LISTENER</Text>
             <Text style={[styles.th, {width: 50}]}>AGE</Text>
+            <Text style={[styles.th, {width: 100}]}>TYPE</Text>
             <Text style={[styles.th, {width: 120}]}>LOCATION</Text>
             <Text style={[styles.th, {width: 120}]}>STATUS</Text>
             <Text style={[styles.th, {width: 80, textAlign: 'center'}]}>ACTION</Text>
           </View>
           
-          {logs && logs.length > 0 ? (
-            logs.map(log => (
-              <View key={log.id} style={styles.tableRow}>
+          {safeLogs.length > 0 ? (
+            safeLogs.map(log => (
+              <View key={log.id || Math.random().toString()} style={styles.tableRow}>
                 <Text style={[styles.td, {width: 60}]}>{log.date ? log.date.slice(5) : '--'}</Text>
-                <Text style={[styles.td, {width: 100, color: '#ffffff', fontWeight: '900'}]}>{log.listener}</Text>
-                <Text style={[styles.td, {width: 50, color: '#ffffff', fontWeight: '500'}]}>{log.age}</Text>
-                <Text style={[styles.td, {width: 120, fontSize: 10, color: '#ffffff'}]}>{log.location}</Text>
+                <Text style={[styles.td, {width: 100, color: '#ffffff', fontWeight: '900'}]}>{log.listener || ''}</Text>
+                <Text style={[styles.td, {width: 50, color: '#ffffff', fontWeight: '500'}]}>{log.age || ''}</Text>
+                <Text style={[styles.td, {width: 100, color: '#26f7ff', fontWeight: '700'}]}>{log.prechType || log.preachingType || ''}</Text>
+                <Text style={[styles.td, {width: 120, fontSize: 10, color: '#ffffff'}]}>{log.location || ''}</Text>
                 <Text style={[styles.td, {width: 120, color: log.isValid ? '#26f7ff' : '#ffaa00', fontWeight: '900'}]}>
                   {log.isValid ? 'VALID' : 'POTENTIAL'}
                 </Text>
@@ -242,7 +246,6 @@ export default function ConnectionForm({
               </View>
             ))
           ) : (
-            // HIGH CONTRAST FIXED
             <Text style={{ color: '#a2a8b6', fontSize: 11, marginTop: 15, fontWeight: '700' }}>No connection logs found.</Text>
           )}
         </View>
@@ -266,7 +269,7 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: '#26f7ff', padding: 18, borderRadius: 12, marginTop: 25, alignItems: 'center' },
   saveBtnText: { color: '#000000', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#2d313d', paddingBottom: 12, marginTop: 20 },
-  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, // High-contrast headers mula sa dating #555
+  th: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }, 
   tableRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#121214', alignItems: 'center' },
   td: { color: '#ffffff', fontSize: 11, fontWeight: '500' },
   inputWrapper: { width: '100%' }
