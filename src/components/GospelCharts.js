@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { supabase } from '../utils/supabase'; //  Ito ang tamang daan!
+import { supabase } from '../utils/supabase'; 
 
 const CATEGORIES = [
   { label: 'Simple', color: '#26f7ff', key: 'simple', target: 300 },
@@ -30,7 +30,6 @@ export default function GospelCharts({ type }) {
   const [activityData, setActivityData] = useState({});
 
   // --- SYNC LOGIC PARA SA RANKING CARD ---
-  // In-update para sa mas matibay na cloud connection
   const syncToSupabase = async (newStats) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -74,16 +73,32 @@ export default function GospelCharts({ type }) {
         AsyncStorage.getItem('@zion_sermon_logs')
       ]);
 
-      const sLogs = s ? JSON.parse(s) : [];
-      const cLogs = c ? JSON.parse(c) : [];
-      const fLogs = f ? JSON.parse(f) : [];
-      const eLogs = e ? JSON.parse(e) : [];
-      const oLogs = o ? JSON.parse(o) : [];
-      const pLogs = p ? JSON.parse(p) : [];
-      const zLogs = z ? JSON.parse(z) : [];
-      const smLogs = sm ? JSON.parse(sm) : [];
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
 
-      // Pag-calculate ng Stats para sa Progress Bars
+      // HELPER ENGINE: Selyadong filter block para i-isolate ang logs sa kasalukuyang buwan lamang
+      const filterThisMonthLogs = (rawJson) => {
+        if (!rawJson) return [];
+        const parsed = JSON.parse(rawJson);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter(log => {
+          if (!log.date) return false;
+          const d = new Date(log.date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        });
+      };
+
+      const sLogs = filterThisMonthLogs(s);
+      const cLogs = filterThisMonthLogs(c);
+      const fLogs = filterThisMonthLogs(f);
+      const eLogs = filterThisMonthLogs(e);
+      const oLogs = filterThisMonthLogs(o);
+      const pLogs = filterThisMonthLogs(p);
+      const zLogs = filterThisMonthLogs(z);
+      const smLogs = filterThisMonthLogs(sm);
+
+      // Pag-calculate ng Stats para sa Progress Bars batay sa na-isolate na buwan
       const calculatedStats = {
         simple: sLogs.reduce((acc, curr) => acc + (curr.total || 0), 0),
         valid: cLogs.filter(l => l.status === 'VALID').length,
@@ -100,7 +115,7 @@ export default function GospelCharts({ type }) {
       // I-trigger ang sync sa Supabase para mag-update ang Ranking Card
       syncToSupabase(calculatedStats);
 
-      // Map para sa Dots sa Calendar
+      // Map para sa Dots sa Calendar view
       const dotMap = {};
 
       const processDots = (logs, color) => {
@@ -203,12 +218,12 @@ export default function GospelCharts({ type }) {
 
 const styles = StyleSheet.create({
   contentBody: { paddingVertical: 10 },
-  monitorRow: { marginBottom: 14 }, // Ginawang 14 mula 12 para sa mas maluwag na finger tapping target area
+  monitorRow: { marginBottom: 14 }, 
   rowInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   catLabel: { 
-    color: '#ffffff', // Solid high contrast white
-    fontSize: 12,     // Bahagyang pinalaki mula 11 para sa solid clarity
-    fontWeight: '900' // Ginawang maximum boldness para sa accessibility ng adults
+    color: '#ffffff', 
+    fontSize: 12,     
+    fontWeight: '900' 
   },
   catVal: { 
     color: '#ffffff', 
@@ -216,8 +231,8 @@ const styles = StyleSheet.create({
     fontWeight: '900' 
   },
   progressTrack: { 
-    height: 6, // Itinaas mula 4 para mas madaling masubaybayan ng mga matatanda ang haba ng bar
-    backgroundColor: '#1c1c21', // Binigyan ng mas litaw na base track fill mula sa dating #1A1D23
+    height: 6, 
+    backgroundColor: '#1c1c21', 
     borderRadius: 3 
   },
   progressBar: { 
@@ -226,21 +241,21 @@ const styles = StyleSheet.create({
   },
   calendarNavContainer: { 
     flexDirection: 'row', 
-    justifyContent: 'space-between', // Pinalawak para sa ergonomic layout ng left/right arrow buttons
+    justifyContent: 'space-between', 
     alignItems: 'center', 
     marginBottom: 15,
     paddingHorizontal: 10
   },
   navBtn: {
     padding: 6,
-    backgroundColor: '#18181c', // Inilagay sa solid high contrast surface button background
+    backgroundColor: '#18181c', 
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#232329'
   },
   monthText: { 
     color: '#ffffff', 
-    fontSize: 14, // Pinalaki mula 12 para litaw agad ang kasalukuyang buwan
+    fontSize: 14, 
     fontWeight: '900', 
     textAlign: 'center',
     textTransform: 'uppercase',
@@ -250,21 +265,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     flexWrap: 'wrap', 
     borderWidth: 1, 
-    borderColor: '#2d313d' // Nilinawan ang master border ring ng grid mula sa madilim na #333
+    borderColor: '#2d313d' 
   },
   dayCell: { 
     width: '14.28%', 
-    height: 58, // Bahagyang pinalaki mula 55 para sa better block proportion
+    height: 58, 
     borderWidth: 0.5, 
-    borderColor: '#232329', // Mas kitang-kitang grid separations kumpara sa #222
+    borderColor: '#232329', 
     padding: 3, 
     alignItems: 'center',
     justifyContent: 'flex-start',
-    backgroundColor: '#121214' // Binigyan ng selyadong panel layer para lumitaw ang mga numerasyon
+    backgroundColor: '#121214' 
   },
   dayNumber: { 
-    color: '#ffffff', // Pure white
-    fontSize: 12,     // Itinaas mula 11 para sa tamang readability block
+    color: '#ffffff', 
+    fontSize: 12,     
     fontWeight: '900', 
     marginBottom: 4 
   },
@@ -276,7 +291,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%'
   },
   dot: { 
-    width: 6, // Pinalaki mula 5 para mas madaling mapansin ng adults ang dots ng logs
+    width: 6, 
     height: 6, 
     borderRadius: 3 
   }

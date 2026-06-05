@@ -24,11 +24,43 @@ const RANK_ICONS = {
 
 export default function RankingCard({ rankingData }) {
   
+  const activeCurrentMonthString = new Date().toISOString().substring(0, 7); // Format: YYYY-MM
+
+  // ISOLATION AND SORTING ENGINE: Isinasagawa ang tamang pag-sort base sa pinagsamang performance score
+  const isolatedMonthlyRankings = React.useMemo(() => {
+    if (!Array.isArray(rankingData)) return [];
+    
+    return [...rankingData]
+      .filter(item => {
+        if (item.log_month) return item.log_month === activeCurrentMonthString;
+        if (item.log_date) return item.log_date.substring(0, 7) === activeCurrentMonthString;
+        return true; 
+      })
+      .sort((a, b) => {
+        // Kumuha ng numerical values para sa ligtas na kalkulasyon
+        const aPreach = Number(a.preach_pct ?? a.preachPct ?? 0);
+        const aActivity = Number(a.activity_pct ?? a.activityPct ?? 0);
+        const bPreach = Number(b.preach_pct ?? b.preachPct ?? 0);
+        const bActivity = Number(b.activity_pct ?? b.activityPct ?? 0);
+
+        // FORMULA MATRICES: Pagsamahin ang dalawang indicators para sa kabuuang score ng sipag
+        const totalScoreA = aPreach + aActivity;
+        const totalScoreB = bPreach + bActivity;
+
+        if (totalScoreB !== totalScoreA) {
+          return totalScoreB - totalScoreA; // Unahin ang may mas mataas na pinagsamang porsyento
+        }
+        // Kung patas, unahin ang may mas mataas na Preach Percentage partikularly
+        return bPreach - aPreach;
+      })
+      .slice(0, 10);
+  }, [rankingData, activeCurrentMonthString]);
+
   const renderMember = ({ item, index }) => {
     const rank = index + 1;
     const hasStar = rank <= 5; 
 
-    const memberName = item.user_name || 'Gospel Worker';
+    const memberName = item.user_name || item.full_name || 'Gospel Worker';
     const groupAge = item.group_age || item.groupAge || ''; 
     const preachPct = item.preach_pct ?? item.preachPct ?? '0';
     const activityPct = item.activity_pct ?? item.activityPct ?? '0';
@@ -36,11 +68,9 @@ export default function RankingCard({ rankingData }) {
     return (
       <View style={[styles.rankRow, rank === 1 && styles.topRankBorder]}>
         <View style={styles.leftInfo}>
-          {/* Siksik na index area para iwas-tulak sa pangalan */}
           <Text style={styles.rankNumber}>{rank}</Text>
           
           <View style={styles.nameGroup}>
-            {/* INAYOS NA WRAPPER: Patayo (Column) na para sa Pangalan at Age Profile kung siksikan */}
             <View style={styles.nameHeaderContainer}>
               <Text 
                 style={styles.memberName} 
@@ -83,13 +113,13 @@ export default function RankingCard({ rankingData }) {
           <MaterialCommunityIcons name="trophy-variant" size={18} color={COLORS.gold} />
           <Text style={styles.cardTitle}>Top Active Workers</Text>
         </View>
-        <Text style={styles.subLabel}>The Top Gospel Worker this Week</Text>
-        <Text style={styles.updateNote}>Updates: Every Friday 11:59PM</Text>
+        <Text style={styles.subLabel}>The Top Gospel Worker this Month</Text>
+        <Text style={styles.updateNote}>Updates: Live Sync Engine Matrix</Text>
       </View>
 
       <FlatList
-        data={rankingData?.slice(0, 10)} 
-        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+        data={isolatedMonthlyRankings} 
+        keyExtractor={(item, index) => item.id?.toString() || item.uniqueKey || index.toString()}
         renderItem={renderMember}
         scrollEnabled={true} 
         showsVerticalScrollIndicator={false}
@@ -97,7 +127,7 @@ export default function RankingCard({ rankingData }) {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="timer-sand" size={30} color="#444" />
-            <Text style={styles.emptyText}>Calculating weekly rankings...</Text>
+            <Text style={styles.emptyText}>Calculating isolated monthly rankings...</Text>
           </View>
         }
       />
@@ -109,7 +139,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
-    padding: 12, // Pinaliit mula 15 para lumaki ang workspace ng listahan
+    padding: 12, 
     borderWidth: 1,
     borderColor: '#232329', 
     height: '100%',
@@ -149,7 +179,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.itemBg,
     paddingVertical: 10, 
-    paddingHorizontal: 8, // Ginawang 8 mula 10 para lumuwag pa ang pinakagitna
+    paddingHorizontal: 8, 
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
@@ -167,7 +197,7 @@ const styles = StyleSheet.create({
     color: COLORS.rankCyan,
     fontSize: 14, 
     fontWeight: '900',
-    width: 16, // Pinaliit mula 18 upang isagad ang lunas sa spacing
+    width: 16, 
     textAlign: 'center'
   },
   nameGroup: {
@@ -177,14 +207,12 @@ const styles = StyleSheet.create({
   nameHeaderContainer: {
     flexDirection: 'row', 
     alignItems: 'center',
-    // UI FIXED GABAY: Tinanggal ang flexWrap para hindi mag-collapse ang text modules sa mobile web layouts
     flex: 1,
   },
   memberName: {
     color: '#ffffff', 
     fontSize: 12, 
     fontWeight: 'bold',
-    // Binigyan ng malaking flex allocation para lumabas ang unang 4-8 na karakter bago mag-truncate
     flexGrow: 2,
     flexShrink: 1, 
   },
@@ -193,7 +221,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     marginLeft: 4,
-    flexShrink: 2, // Mas mabilis itong mapuputol kumpara sa memberName para protektahan ang pangalan
+    flexShrink: 2, 
   },
   statsRow: {
     flexDirection: 'row',
@@ -214,7 +242,7 @@ const styles = StyleSheet.create({
   rightInfo: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    width: 20, // Pinaliit mula 24 para hindi nakaw-espasyo sa pangalan ng worker
+    width: 20, 
     marginLeft: 2,
   },
   starIcon: {

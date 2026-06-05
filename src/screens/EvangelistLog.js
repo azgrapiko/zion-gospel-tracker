@@ -104,42 +104,64 @@ export default function EvangelistLog() {
       const startDate = `${currentMonth}-01`;
       const endDate = `${currentMonth}-${lastDay}`;
 
-      const { data, error } = await supabase
+      // HAKBANG 1: Kunin muna natin ang lahat ng profile metadata map para sa cross-referencing precision matching
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('full_name, group_age, lms_level');
+
+      if (profilesError) throw profilesError;
+
+      // Gumawa ng mabilisang lookup dictionary para sa profiles database map
+      const profilesMap = {};
+      profilesData.forEach(p => {
+        if (p.full_name) {
+          profilesMap[p.full_name.trim().toUpperCase()] = {
+            group_age: p.group_age,
+            lms_level: p.lms_level
+          };
+        }
+      });
+
+      // HAKBANG 2: Kunin ang mga transaksyon ng gospel activity logs
+      const { data: activityData, error: activityError } = await supabase
         .from('gospel_activity')
         .select('*')
         .gte('log_date', startDate)
         .lte('log_date', endDate)
         .order('log_date', { ascending: false });
 
-      if (error) throw error;
+      if (activityError) throw activityError;
 
       const cardsAggregation = {};
 
-      data.forEach(item => {
-        // MAHIGPIT NA FIX 1: Tiyakin na trimmed at naka-normalize ang pangalan ng member para maiwasan ang dobleng card logs
+      activityData.forEach(item => {
         const memberName = item.full_name ? item.full_name.trim() : 'Unknown Member';
         const zionCode = item.zion_code ? item.zion_code.trim() : 'PLA';
+        const searchKey = memberName.toUpperCase();
         
         // Gagamitin natin ang eksaktong kumbinasyon ng Pangalan at Zion Code para sa buong buwan
-        const uniqueKey = `${memberName.toUpperCase()}_${zionCode.toUpperCase()}`;
+        const uniqueKey = `${searchKey}_${zionCode.toUpperCase()}`;
         
+        // Kunin ang tunay at live profile identification data na galing sa profiles table profile metadata mapping
+        const matchedProfile = profilesMap[searchKey];
+        const verifiedGroup = matchedProfile?.group_age || item.group_age || 'Male Adult';
+        const verifiedLMS = matchedProfile?.lms_level || item.lms_level || 'New Member';
+
         if (!cardsAggregation[uniqueKey]) {
           cardsAggregation[uniqueKey] = {
             id: uniqueKey,
             full_name: memberName,
             zion_code: zionCode,
-            age_group: item.age_group || 'Adult', 
-            lms_level: item.lms_level || 'Evangelist', // Default fallback consistency check
+            group_age: verifiedGroup, 
+            lms_level: verifiedLMS, 
             dailyActivities: {} 
           };
         }
 
-        // Kung sakaling may naunang null na value sa ibang logs, punan ng tamang value kung meron sa kasalukuyang row
-        if (item.age_group && cardsAggregation[uniqueKey].age_group === 'Adult') {
-          cardsAggregation[uniqueKey].age_group = item.age_group;
-        }
-        if (item.lms_level && (cardsAggregation[uniqueKey].lms_level === 'Regular' || cardsAggregation[uniqueKey].lms_level === 'Evangelist')) {
-          cardsAggregation[uniqueKey].lms_level = item.lms_level;
+        // Siguraduhing laging naka-sync sa profile values kahit magbago ang kasalukuyang loop item row
+        if (matchedProfile) {
+          cardsAggregation[uniqueKey].group_age = matchedProfile.group_age || cardsAggregation[uniqueKey].group_age;
+          cardsAggregation[uniqueKey].lms_level = matchedProfile.lms_level || cardsAggregation[uniqueKey].lms_level;
         }
 
         const dateKey = item.log_date;
@@ -149,8 +171,7 @@ export default function EvangelistLog() {
 
         if (cardsAggregation[uniqueKey].dailyActivities[dateKey].length < 3) {
           
-          // MAHIGPIT NA FIX 2: SYSTEMATIC HIERARCHY EVALUATION ENGINE PARA SA TRANSLATION MAP
-          // Inuuna ang tiyak na sub-category fields bago mag-fallback sa general classification text
+          // SYSTEMATIC HIERARCHY EVALUATION ENGINE PARA SA TRANSLATION MAP
           const rawEducation = item.education_type ? String(item.education_type).toLowerCase().trim() : '';
           const rawActivity = item.activity_type ? String(item.activity_type).toLowerCase().trim() : '';
           const rawPreaching = item.preaching_type ? String(item.preaching_type).toLowerCase().trim() : '';
@@ -161,10 +182,8 @@ export default function EvangelistLog() {
           let matchedCode = '213';
           let matchFound = false;
 
-          // Target array list para sa pagkakasunod-sunod ng may pinakamataas na prayoridad na field text value
           const prioritizedFields = [rawEducation, rawActivity, rawPreaching, rawOnline, rawLms];
 
-          // Hanapin ang pinakaunang may tamang tugma sa ating CODE_TRANSLATION_MAP matrix array keys
           for (const currentVal of prioritizedFields) {
             if (currentVal && currentVal !== 'null' && currentVal !== 'zion') {
               // 1st Layer: Exact matching parameters
@@ -186,14 +205,12 @@ export default function EvangelistLog() {
             }
           }
 
-          // 3rd Layer Fallback Engine Check: Kung may valid string pero walang tugma sa dictionary keys
           if (!matchFound) {
             const validFallbackText = item.education_type || item.activity_type || item.preaching_type || item.online_content || item.lms_course;
             if (validFallbackText && String(validFallbackText).toLowerCase().trim() !== 'zion') {
               matchedClass = validFallbackText;
-              matchedCode = '100'; // Tracking index code for unclassified manual server injection types
+              matchedCode = '100'; 
             } else if (String(rawPreaching) === 'zion' || String(rawActivity).includes('cleaning')) {
-              // Katulad ng nakita sa database log parameter trace file, awtomatikong ibigay ang code para sa Cleaning in Zion
               matchedClass = 'Weekly Worship Support';
               matchedCode = '301';
             }
@@ -303,7 +320,6 @@ export default function EvangelistLog() {
     if (!selectedUserCard) return null;
 
     const allFlattenedLogs = [];
-    // Pag-uri-urihin ang mga petsa mula sa pinakabago pababa bago ilatag sa row grid layout list
     const sortedDates = Object.keys(selectedUserCard.dailyActivities).sort((a, b) => new Date(b) - new Date(a));
     
     sortedDates.forEach(dateStr => {
@@ -338,29 +354,41 @@ export default function EvangelistLog() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>EVANGELIST LOG ENGINE</Text>
+      <Text style={styles.headerTitle}>EVANGELIST ACTIVITY LOG</Text>
 
       <Text style={styles.label}>FILTER ACTIVITY HISTORY MONTH</Text>
-      <View style={styles.inputBoxWrapper}>
-        {Platform.OS === 'web' ? (
-          <input 
-            type="month" 
-            value={currentMonth} 
-            onChange={(e) => setCurrentMonth(e.target.value)} 
-            style={styles.webDate} 
-          />
-        ) : (
-          <View style={styles.nativeDateContainer}>
-            <TextInput 
-              style={styles.inputText}
-              value={currentMonth}
-              placeholder="YYYY-MM"
-              placeholderTextColor="#8a8f9e"
-              onChangeText={setCurrentMonth}
+      
+      <View style={styles.filterSectionControlRow}>
+        <View style={styles.inputBoxWrapper}>
+          {Platform.OS === 'web' ? (
+            <input 
+              type="month" 
+              value={currentMonth} 
+              onChange={(e) => setCurrentMonth(e.target.value)} 
+              style={styles.webDate} 
             />
-            <MaterialCommunityIcons name="calendar-multiselect" size={20} color="#26f7ff" />
-          </View>
-        )}
+          ) : (
+            <View style={styles.nativeDateContainer}>
+              <TextInput 
+                style={styles.inputText}
+                value={currentMonth}
+                placeholder="YYYY-MM"
+                placeholderTextColor="#8a8f9e"
+                onChangeText={setCurrentMonth}
+              />
+              <MaterialCommunityIcons name="calendar-multiselect" size={20} color="#26f7ff" />
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity 
+          style={styles.circleRefreshButton} 
+          onPress={fetchCentralGospelLogs} 
+          activeOpacity={0.7}
+          disabled={loading}
+        >
+          <MaterialCommunityIcons name="refresh" size={22} color="#26f7ff" />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -374,7 +402,7 @@ export default function EvangelistLog() {
               <View style={styles.cardHeader}>
                 <View>
                   <Text style={styles.cardUserName}>{item.full_name}</Text>
-                  <Text style={styles.cardSubDetails}>Group: {item.age_group}  |  LMS: {item.lms_level}</Text>
+                  <Text style={styles.cardSubDetails}>Group: {item.group_age}  |  LMS: {item.lms_level}</Text>
                 </View>
                 <View style={styles.badgeZion}>
                   <Text style={styles.badgeText}>{item.zion_code}</Text>
@@ -466,7 +494,8 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 15, letterSpacing: 1.5 },
   label: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 6, letterSpacing: 0.5 },
   
-  inputBoxWrapper: { marginBottom: 15 },
+  filterSectionControlRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 },
+  inputBoxWrapper: { flex: 1 },
   nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: '#121214', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2c303b'
@@ -474,7 +503,12 @@ const styles = StyleSheet.create({
   inputText: { color: '#ffffff', fontSize: 13, flex: 1 },
   webDate: { 
     backgroundColor: '#121214', color: '#26f7ff', border: '1px solid #2c303b', 
-    padding: '10px', borderRadius: '8px', width: '50%', fontSize: '13px', outline: 'none' 
+    padding: '10px', borderRadius: '8px', width: '30%', fontSize: '13px', outline: 'none' 
+  },
+  
+  circleRefreshButton: {
+    width: 42, height: 42, borderRadius: 21, backgroundColor: '#121214',
+    borderWidth: 1, borderColor: '#2c303b', justifyContent: 'center', alignItems: 'center'
   },
 
   userCard: { 
