@@ -136,15 +136,13 @@ export default function Sidebar({ navigation, state }) {
           />
         )}
 
-        {/* [ADMIN ONLY] 6. EVANGELIST LOG */}
-        {isAdmin && (
-          <MenuItem 
-            icon="file-document-edit-outline" 
-            title="Evangelist Log" 
-            target="EvangelistLog" 
-            isActive={currentRoute === 'EvangelistLog'}
-          />
-        )}
+        {/* [PUBLIC] 6. EVANGELIST LOG - Ngayon ay accessible na para sa lahat ng uri ng member profiles */}
+        <MenuItem 
+          icon="file-document-edit-outline" 
+          title="Evangelist Log" 
+          target="EvangelistLog" 
+          isActive={currentRoute === 'EvangelistLog'}
+        />
         
         {/* [PUBLIC] 7. HELP & FEEDBACK (Target structural route name is linked to 'Settings') */}
         <MenuItem 

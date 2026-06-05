@@ -13,7 +13,7 @@ import Sidebar from '../components/Sidebar';
 import DashboardScreen from '../screens/Dashboard';
 import ZionControl from '../screens/ZionControl';
 import GospelScreen from '../screens/GospelScreen'; 
-import ProfileScreen from '../screens/Profile/ProfileScreen'; 
+import ProfileScreen from '../screens/Profile/ProfileScreen'; // NAITUWD NA: Pinasok ang tamang Profile subfolder layer
 import HelpFeedbackScreen from '../screens/HelpFeedbackScreen'; // VERIFIED IMPORT PATH
 import AttendanceScreen from '../screens/AttendanceScreen'; // IN-IMPORT ANG BAGONG ATTENDANCE FILE
 import EvangelistLog from '../screens/EvangelistLog'; // LIGTAS AT VERIFIED NA PAGKAKA-IMPORT NG BAGONG TAB
@@ -151,17 +151,15 @@ export default function MainNavigator() {
         />
       )}
 
-      {/* 6. EVANGELIST LOG MODULE - ADMIN SECURED GATEWAY */}
-      {isAdmin && (
-        <Drawer.Screen 
-          name="EvangelistLog" // Structural target key route matching the declaration inside Sidebar.js
-          component={EvangelistLog} 
-          options={{ 
-            title: 'EVANGELIST LOG CENTER',
-            drawerIcon: ({color}) => <MaterialCommunityIcons name="file-document-edit" size={22} color={color} />
-          }} 
-        />
-      )}
+      {/* 6. EVANGELIST LOG MODULE - BINUKSAN PARA SA LAHAT NG ROLES */}
+      <Drawer.Screen 
+        name="EvangelistLog" // Structural target key route matching the declaration inside Sidebar.js
+        component={EvangelistLog} 
+        options={{ 
+          title: 'EVANGELIST LOG CENTER',
+          drawerIcon: ({color}) => <MaterialCommunityIcons name="file-document-edit" size={22} color={color} />
+        }} 
+      />
 
       {/* 7. HELP & FEEDBACK COMPONENT NODE */}
       <Drawer.Screen 

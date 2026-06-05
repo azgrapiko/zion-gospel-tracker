@@ -10,10 +10,14 @@ import { supabase } from '../utils/supabase';
 const CODE_TRANSLATION_MAP = {
   // Preaching Class
   'door to door': { class: 'Door to door Preaching', code: '101' },
+  'door to door preaching': { class: 'Door to door Preaching', code: '101' },
   'street': { class: 'Street Preaching', code: '102' },
+  'street preaching': { class: 'Street Preaching', code: '102' },
   'event': { class: 'Event Preaching', code: '104' },
+  'event preaching': { class: 'Event Preaching', code: '104' },
   'acquaintance': { class: 'Connection Preaching', code: '105' },
   'connection': { class: 'Connection Preaching', code: '105' },
+  'connection preaching': { class: 'Connection Preaching', code: '105' },
   'online': { class: 'Other Preaching', code: '118' },
   'other preaching': { class: 'Other Preaching', code: '118' },
   'preaching support': { class: 'Preaching Support', code: '123' },
@@ -41,6 +45,7 @@ const CODE_TRANSLATION_MAP = {
 
   // Temple Activity Class
   'cleaning in zion': { class: 'Weekly Worship Support', code: '301' },
+  'cleaning zion': { class: 'Weekly Worship Support', code: '301' },
   'weekly worship': { class: 'Weekly Worship', code: '301' },
   'feast worship': { class: 'Feast Worship', code: '302' },
   'carrying children': { class: 'Temple Support', code: '211' },
@@ -92,10 +97,9 @@ export default function EvangelistLog() {
     try {
       if (!supabase) return;
 
-      // FIX 1: Ligtas at Dynamic na pagkuha ng Sakop na Araw ng Buwan para maiwasan ang PostgreSQL 500 error range crash
       const year = parseInt(currentMonth.split('-')[0], 10);
       const month = parseInt(currentMonth.split('-')[1], 10);
-      const lastDay = new Date(year, month, 0).getDate(); // Awtomatikong kinukuha ang huling araw (30, 31, o 28/29)
+      const lastDay = new Date(year, month, 0).getDate(); 
 
       const startDate = `${currentMonth}-01`;
       const endDate = `${currentMonth}-${lastDay}`;
@@ -109,14 +113,15 @@ export default function EvangelistLog() {
 
       if (error) throw error;
 
-      // 2. I-MAP AT AGGREGATE ANG DATA PARA SA BUONG BUWAN PER USER CARD
       const cardsAggregation = {};
 
       data.forEach(item => {
-        // Tiyakin na may unique identifier (Fallback to 'Unknown' para hindi mag-crash ang key rendering)
-        const memberName = item.full_name || 'Unknown Member';
-        const zionCode = item.zion_code || 'PLA';
-        const uniqueKey = `${memberName}_${zionCode}`;
+        // MAHIGPIT NA FIX 1: Tiyakin na trimmed at naka-normalize ang pangalan ng member para maiwasan ang dobleng card logs
+        const memberName = item.full_name ? item.full_name.trim() : 'Unknown Member';
+        const zionCode = item.zion_code ? item.zion_code.trim() : 'PLA';
+        
+        // Gagamitin natin ang eksaktong kumbinasyon ng Pangalan at Zion Code para sa buong buwan
+        const uniqueKey = `${memberName.toUpperCase()}_${zionCode.toUpperCase()}`;
         
         if (!cardsAggregation[uniqueKey]) {
           cardsAggregation[uniqueKey] = {
@@ -124,9 +129,17 @@ export default function EvangelistLog() {
             full_name: memberName,
             zion_code: zionCode,
             age_group: item.age_group || 'Adult', 
-            lms_level: item.lms_level || 'Evangelist',
+            lms_level: item.lms_level || 'Evangelist', // Default fallback consistency check
             dailyActivities: {} 
           };
+        }
+
+        // Kung sakaling may naunang null na value sa ibang logs, punan ng tamang value kung meron sa kasalukuyang row
+        if (item.age_group && cardsAggregation[uniqueKey].age_group === 'Adult') {
+          cardsAggregation[uniqueKey].age_group = item.age_group;
+        }
+        if (item.lms_level && (cardsAggregation[uniqueKey].lms_level === 'Regular' || cardsAggregation[uniqueKey].lms_level === 'Evangelist')) {
+          cardsAggregation[uniqueKey].lms_level = item.lms_level;
         }
 
         const dateKey = item.log_date;
@@ -134,35 +147,56 @@ export default function EvangelistLog() {
           cardsAggregation[uniqueKey].dailyActivities[dateKey] = [];
         }
 
-        // Tiyakin na maximum na 3 logs lang kada araw ang kukunin bawat user
         if (cardsAggregation[uniqueKey].dailyActivities[dateKey].length < 3) {
-          // FIX 2: Mas pinatibay na field string parsing engine para saluhin kung anong column ang pinasukan ng data mula sa PreachingModal
-          const lookupField = String(
-            item.preaching_type || 
-            item.education_type || 
-            item.activity_type || 
-            item.online_content || 
-            item.lms_course || 
-            ''
-          ).toLowerCase().trim();
           
+          // MAHIGPIT NA FIX 2: SYSTEMATIC HIERARCHY EVALUATION ENGINE PARA SA TRANSLATION MAP
+          // Inuuna ang tiyak na sub-category fields bago mag-fallback sa general classification text
+          const rawEducation = item.education_type ? String(item.education_type).toLowerCase().trim() : '';
+          const rawActivity = item.activity_type ? String(item.activity_type).toLowerCase().trim() : '';
+          const rawPreaching = item.preaching_type ? String(item.preaching_type).toLowerCase().trim() : '';
+          const rawOnline = item.online_content ? String(item.online_content).toLowerCase().trim() : '';
+          const rawLms = item.lms_course ? String(item.lms_course).toLowerCase().trim() : '';
+
           let matchedClass = 'Other Activity Support';
           let matchedCode = '213';
-
-          // Pag-scan sa localized code engine mapping parameters
           let matchFound = false;
-          Object.keys(CODE_TRANSLATION_MAP).forEach(key => {
-            if (lookupField && (lookupField.includes(key) || key.includes(lookupField))) {
-              matchedClass = CODE_TRANSLATION_MAP[key].class;
-              matchedCode = CODE_TRANSLATION_MAP[key].code;
-              matchFound = true;
-            }
-          });
 
-          // Fallback check: Kung may nakasulat na activity text pero hindi tugma sa translation keys, ipakita ang mismong nakasulat
-          if (!matchFound && lookupField.length > 0) {
-            matchedClass = item.preaching_type || item.education_type || item.activity_type || 'Custom Activity';
-            matchedCode = '100'; // Default unclassified code log tracking indicator
+          // Target array list para sa pagkakasunod-sunod ng may pinakamataas na prayoridad na field text value
+          const prioritizedFields = [rawEducation, rawActivity, rawPreaching, rawOnline, rawLms];
+
+          // Hanapin ang pinakaunang may tamang tugma sa ating CODE_TRANSLATION_MAP matrix array keys
+          for (const currentVal of prioritizedFields) {
+            if (currentVal && currentVal !== 'null' && currentVal !== 'zion') {
+              // 1st Layer: Exact matching parameters
+              if (CODE_TRANSLATION_MAP[currentVal]) {
+                matchedClass = CODE_TRANSLATION_MAP[currentVal].class;
+                matchedCode = CODE_TRANSLATION_MAP[currentVal].code;
+                matchFound = true;
+                break;
+              }
+              
+              // 2nd Layer: Clean substring index search mapping keys
+              const potentialKey = Object.keys(CODE_TRANSLATION_MAP).find(k => k === currentVal || currentVal.includes(k));
+              if (potentialKey) {
+                matchedClass = CODE_TRANSLATION_MAP[potentialKey].class;
+                matchedCode = CODE_TRANSLATION_MAP[potentialKey].code;
+                matchFound = true;
+                break;
+              }
+            }
+          }
+
+          // 3rd Layer Fallback Engine Check: Kung may valid string pero walang tugma sa dictionary keys
+          if (!matchFound) {
+            const validFallbackText = item.education_type || item.activity_type || item.preaching_type || item.online_content || item.lms_course;
+            if (validFallbackText && String(validFallbackText).toLowerCase().trim() !== 'zion') {
+              matchedClass = validFallbackText;
+              matchedCode = '100'; // Tracking index code for unclassified manual server injection types
+            } else if (String(rawPreaching) === 'zion' || String(rawActivity).includes('cleaning')) {
+              // Katulad ng nakita sa database log parameter trace file, awtomatikong ibigay ang code para sa Cleaning in Zion
+              matchedClass = 'Weekly Worship Support';
+              matchedCode = '301';
+            }
           }
 
           cardsAggregation[uniqueKey].dailyActivities[dateKey].push({
@@ -177,7 +211,6 @@ export default function EvangelistLog() {
       const finalCards = Object.values(cardsAggregation);
       setUserCards(finalCards);
 
-      // Kung kasalukuyang nakabukas ang Modal, i-update ang reference data nito agad
       if (selectedUserCard) {
         const updatedCard = finalCards.find(c => c.id === selectedUserCard.id);
         if (updatedCard) setSelectedUserCard(updatedCard);
@@ -200,7 +233,6 @@ export default function EvangelistLog() {
     const targetDate = manualDate;
     const currentDailyLogs = selectedUserCard.dailyActivities[targetDate] || [];
 
-    // Proteksyon: Suriin kung ang napiling petsa ay mayroon nang 3 entries
     if (currentDailyLogs.length >= 3) {
       const errorMsg = "Pansin po: Maximum 3 activity table logs lamang ang pinahihintulutan kada araw.";
       Platform.OS === 'web' ? window.alert(errorMsg) : Alert.alert("Daily Limit Reached", errorMsg);
@@ -209,19 +241,17 @@ export default function EvangelistLog() {
 
     try {
       if (supabase) {
-        // I-insert sa central table bilang raw tracking parameter para maging persistent ang data pipeline
         const payload = {
           log_date: targetDate,
           full_name: selectedUserCard.full_name,
           zion_code: selectedUserCard.zion_code,
-          activity_type: manualClass, // Direct classification save injection
+          activity_type: manualClass, 
           total: 1
         };
 
         const { error } = await supabase.from('gospel_activity').insert([payload]);
         if (error) throw error;
 
-        // I-re-fetch ang pipeline upang i-reconstruct ang state mapping matrix safely
         await fetchCentralGospelLogs();
         
         const successMsg = "Manual entry added successfully!";
@@ -232,7 +262,6 @@ export default function EvangelistLog() {
     }
   };
 
-  // --- DYNAMIC REAL-TIME SUPABASE ROW DELETION PIPELINE ---
   const handleDeleteActivityLog = async (logId) => {
     const confirmMsg = "Sigurado ka ba na nais mong burahin ang activity record na ito?";
     
@@ -247,7 +276,6 @@ export default function EvangelistLog() {
 
         if (error) throw error;
 
-        // I-refresh ang pipeline pagkatapos mabura sa central table records
         await fetchCentralGospelLogs();
 
         const successMsg = "Record deleted successfully!";
@@ -259,7 +287,7 @@ export default function EvangelistLog() {
 
     if (Platform.OS === 'web') {
       if (window.confirm(confirmMsg)) executeDeletion();
-    } else { // <-- NAITUWD NA DITO (Mula sa ':' ginawang 'else')
+    } else {
       Alert.alert(
         "Confirm Delete",
         confirmMsg,
@@ -271,12 +299,14 @@ export default function EvangelistLog() {
     }
   };
 
-  // Render function para sa table grid ng logs sa loob ng individual modal structure
   const renderDetailsTableList = () => {
     if (!selectedUserCard) return null;
 
     const allFlattenedLogs = [];
-    Object.keys(selectedUserCard.dailyActivities).forEach(dateStr => {
+    // Pag-uri-urihin ang mga petsa mula sa pinakabago pababa bago ilatag sa row grid layout list
+    const sortedDates = Object.keys(selectedUserCard.dailyActivities).sort((a, b) => new Date(b) - new Date(a));
+    
+    sortedDates.forEach(dateStr => {
       selectedUserCard.dailyActivities[dateStr].forEach(log => {
         allFlattenedLogs.push(log);
       });
@@ -292,7 +322,6 @@ export default function EvangelistLog() {
             <Text style={[styles.rCell, { flex: 2, color: '#ffffff', fontWeight: '500' }]}>{item.activity_class}</Text>
             <Text style={[styles.rCell, { flex: 0.8, color: '#26f7ff', fontWeight: '900', textAlign: 'center' }]}>{item.code}</Text>
             
-            {/* ACTION COLUMN CELL BLOCK: TRASH CAN ICON ENTRY */}
             <View style={[styles.rCell, { flex: 0.6, alignItems: 'flex-end', justifyContent: 'center' }]}>
               <TouchableOpacity onPress={() => handleDeleteActivityLog(item.id)} style={styles.actionDeleteRowBtn} activeOpacity={0.6}>
                 <MaterialCommunityIcons name="delete-outline" size={18} color="#ff4d4d" />
@@ -311,7 +340,6 @@ export default function EvangelistLog() {
     <View style={styles.container}>
       <Text style={styles.headerTitle}>EVANGELIST LOG ENGINE</Text>
 
-      {/* --- HISTORY MONTHLY PICKER CALENDAR COMPONENT --- */}
       <Text style={styles.label}>FILTER ACTIVITY HISTORY MONTH</Text>
       <View style={styles.inputBoxWrapper}>
         {Platform.OS === 'web' ? (
@@ -338,7 +366,6 @@ export default function EvangelistLog() {
       {loading ? (
         <ActivityIndicator size="large" color="#26f7ff" style={{ marginTop: 40 }} />
       ) : (
-        /* --- DYNAMIC USER ACCUMULATED MONTHLY CARD LIST --- */
         <FlatList
           data={userCards}
           keyExtractor={(item) => item.id}
@@ -365,7 +392,6 @@ export default function EvangelistLog() {
         />
       )}
 
-      {/* --- REVERSIBLE INTERACTIVE MASTER MODAL DIALOG DISPLAY --- */}
       <Modal visible={isModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -380,7 +406,6 @@ export default function EvangelistLog() {
               </TouchableOpacity>
             </View>
 
-            {/* MANUALLY INJECT LOG SECTION WITHIN THE CARD VIEW */}
             <View style={styles.manualEntryBox}>
               <Text style={styles.manualSectionTitle}>ADD MANUAL ACTIVITY TRANSACTION</Text>
               
@@ -417,7 +442,6 @@ export default function EvangelistLog() {
               </View>
             </View>
 
-            {/* ACTIVITY RENDER TABLE */}
             <Text style={styles.tableHeaderTitle}>ACTIVITY TABLE RECORDS (MAX 3 PER DAY)</Text>
             <View style={styles.tableHeader}>
               <Text style={[styles.hCell, { flex: 1 }]}>Date</Text>
@@ -442,7 +466,6 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 15, letterSpacing: 1.5 },
   label: { color: '#26f7ff', fontSize: 11, fontWeight: '900', marginBottom: 6, letterSpacing: 0.5 },
   
-  // Monthly Calendar Web/Native Wrappers
   inputBoxWrapper: { marginBottom: 15 },
   nativeDateContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -454,7 +477,6 @@ const styles = StyleSheet.create({
     padding: '10px', borderRadius: '8px', width: '50%', fontSize: '13px', outline: 'none' 
   },
 
-  // User accumulated monthly representation cards
   userCard: { 
     backgroundColor: '#121214', borderRadius: 10, padding: 14, marginBottom: 12, 
     borderWidth: 1, borderColor: '#2c303b' 
@@ -467,26 +489,23 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, borderTopWidth: 1, borderTopColor: '#1c1e24', paddingTop: 8 },
   footerActionText: { color: '#26f7ff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
 
-  // Interactive Modal Styling Rules
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#0a0a0c', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, height: '85%', borderWidth: 1, borderColor: '#1c1e24' },
   modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 },
   modalTitle: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
   modalSubtitle: { color: '#8a8f9e', fontSize: 11, marginTop: 2 },
   
-  // Manual Activity Box Sub-layout
   manualEntryBox: { backgroundColor: '#121214', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#232329', marginBottom: 15 },
   manualSectionTitle: { color: '#d504e8', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 0.5 },
   rowInput: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   manualDateInput: { backgroundColor: '#050505', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#2c303b', maxWidth: 110, color: '#ffffff', fontSize: 12, textAlign: 'center' },
   pickerWrap: { flex: 1, backgroundColor: '#050505', borderRadius: 6, borderWidth: 1, borderColor: '#2c303b', overflow: 'hidden' },
-  picker: { color: '#080808', height: 40 },
+  picker: { color: '#000000', height: 40 },
   codeRowBlock: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   codePreviewText: { color: '#8a8f9e', fontSize: 11, fontWeight: '700' },
   addManualBtn: { backgroundColor: '#d504e8', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6 },
   addManualBtnText: { color: '#ffffff', fontSize: 11, fontWeight: '900' },
 
-  // Table Configuration Core Rules inside Modal
   tableHeaderTitle: { color: '#ffffff', fontSize: 11, fontWeight: '900', marginBottom: 8, letterSpacing: 0.5 },
   tableHeader: { flexDirection: 'row', backgroundColor: '#121214', padding: 10, borderRadius: 5, borderBottomWidth: 1, borderBottomColor: '#2c303b' },
   hCell: { color: '#a2a8b6', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
