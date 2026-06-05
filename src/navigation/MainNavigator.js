@@ -16,6 +16,7 @@ import GospelScreen from '../screens/GospelScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen'; 
 import HelpFeedbackScreen from '../screens/HelpFeedbackScreen'; // VERIFIED IMPORT PATH
 import AttendanceScreen from '../screens/AttendanceScreen'; // IN-IMPORT ANG BAGONG ATTENDANCE FILE
+import EvangelistLog from '../screens/EvangelistLog'; // LIGTAS AT VERIFIED NA PAGKAKA-IMPORT NG BAGONG TAB
 
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -150,7 +151,19 @@ export default function MainNavigator() {
         />
       )}
 
-      {/* 6. HELP & FEEDBACK COMPONENT NODE */}
+      {/* 6. EVANGELIST LOG MODULE - ADMIN SECURED GATEWAY */}
+      {isAdmin && (
+        <Drawer.Screen 
+          name="EvangelistLog" // Structural target key route matching the declaration inside Sidebar.js
+          component={EvangelistLog} 
+          options={{ 
+            title: 'EVANGELIST LOG CENTER',
+            drawerIcon: ({color}) => <MaterialCommunityIcons name="file-document-edit" size={22} color={color} />
+          }} 
+        />
+      )}
+
+      {/* 7. HELP & FEEDBACK COMPONENT NODE */}
       <Drawer.Screen 
         name="Settings" // Structural key route matching the target inside Sidebar.js
         component={HelpFeedbackScreen} 
